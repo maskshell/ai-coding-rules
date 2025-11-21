@@ -1,0 +1,64 @@
+# Vue Composition API 规范
+
+## 组合式 API 使用
+
+### 响应式基础
+
+- 使用 `ref()` 声明基本类型和对象
+- 使用 `reactive()` 声明复杂对象（要有意义）
+- 优先使用 `computed()` 处理派生状态
+- 使用 `readonly()` 保护不应被修改的状态
+
+```typescript
+// 好的例子
+const count = ref(0)
+const doubleCount = computed(() => count.value * 2)
+const state = reactive({ name: '', age: 0 })
+
+// 避免
+const count = reactive({ value: 0 }) // 过度包装
+```
+
+### 生命周期钩子
+
+- 使用 onMounted, onUnmounted 等组合式 API
+- 在 setup 中调用，不放在函数内部
+
+```typescript
+onMounted(() => {
+  // 初始化逻辑
+})
+```
+
+## Props 和 Emits
+
+### Props 定义
+
+- 使用 TypeScript 接口定义 props
+- 提供默认值
+- 使用 withDefaults 编译器宏
+
+```typescript
+interface Props {
+  title?: string
+  count: number
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  title: '默认标题'
+})
+```
+
+### Emits 定义
+
+- 显式定义 emits
+- 使用 TypeScript 定义事件载荷
+
+```typescript
+interface Emits {
+  (e: 'update', value: string): void
+  (e: 'delete', id: number): void
+}
+
+const emit = defineEmits<Emits>()
+```
