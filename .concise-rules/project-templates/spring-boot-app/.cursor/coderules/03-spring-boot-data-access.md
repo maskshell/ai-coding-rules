@@ -1,0 +1,215 @@
+# Spring Boot 数据访问（精简版）
+
+## JPA Repository
+
+**使用方式**：
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+    // 命名查询
+    Optional<User> findByUsername(String username);
+    boolean existsByUsername(String username);
+
+    // JPQL
+    @Query("SELECT u FROM User u WHERE u.enabled = true")
+    List<User> findActiveUsers();
+
+    // 原生SQL
+    @Query(value = "SELECT * FROM users WHERE username LIKE %:username%", nativeQuery = true)
+    List<User> findByUsernameLike(@Param("username") String username);
+
+    // 分页
+    Page<User> findByEnabled(Boolean enabled, Pageable pageable);
+
+    // 更新
+    @Modifying
+    @Query("UPDATE User u SET u.password = :password WHERE u.id = :id")
+    void updatePassword(@Param("id") Long id, @Param("password") String password);
+}
+```
+
+**实体映射**：
+```java
+@Entity
+@Table(name = "orders")
+@Data
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_no", nullable = false, unique = true)
+    private String orderNo;
+
+    @Column(nullable = false)
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items = new ArrayList<>();
+
+    @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+}
+```
+
+## MyBatis / MyBatis-Plus
+
+**MyBatis**：
+```java
+@Mapper
+public interface UserMapper {
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "createdAt", column = "created_at")
+    })
+    User findById(Long id);
+
+    @Insert("INSERT INTO users(username, email) VALUES(#{username}, #{email})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(User user);
+}
+```
+
+**MyBatis-Plus**：
+```java
+// Mapper
+public interface UserMapper extends BaseMapper<User> {
+    List<User> findByUsernameLike(@Param("username") String username);
+}
+
+// Service
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    public Page<User> searchUsers(UserQuery query) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(query.getUsername())) {
+            wrapper.like("username", query.getUsername());
+        }
+        wrapper.orderByDesc("created_at");
+        return page(new Page<>(query.getPage(), query.getPageSize()), wrapper);
+    }
+}
+```
+
+## 事务管理
+
+```java
+@Service
+public class OrderService {
+    // 创建订单（多步骤操作）
+    @Transactional
+    public OrderDTO createOrder(OrderCreateDTO dto) {
+        // 1. 创建订单
+        Order savedOrder = orderRepository.save(order);
+
+        // 2. 创建订单项
+        orderItemRepository.saveAll(items);
+
+        // 3. 扣减库存
+        for (OrderItem item : items) {
+            productRepository.decreaseStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 4. 更新订单状态
+        savedOrder.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(savedOrder);
+
+        return orderMapper.toDTO(savedOrder);
+    }
+
+    // 新事务（独立提交）
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void logAsync(UserActionLog log) { ... }
+}
+```
+
+## 分页查询
+
+**分页参数**：
+```java
+@Data
+public class PageQuery {
+    @Min(1)
+    private Integer page = 1;
+
+    @Min(1)
+    @Max(100)
+    private Integer pageSize = 10;
+
+    @JsonIgnore
+    public PageRequest toPageRequest() {
+        return PageRequest.of(page - 1, pageSize);
+    }
+}
+```
+
+**分页查询**：
+```java
+@Service
+public class ProductService {
+    public PageResult<ProductDTO> searchProducts(ProductQuery query) {
+        // 1. 构建查询规格
+        Specification<Product> spec = (root, cq, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (StringUtils.isNotBlank(query.getName())) {
+                predicates.add(cb.like(root.get("name"), "%" + query.getName() + "%"));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // 2. 执行查询
+        Sort sort = Sort.by(Sort.Direction.DESC, "createdAt");
+        PageRequest pageRequest = PageRequest.of(query.getPage() - 1, query.getPageSize(), sort);
+        Page<Product> page = productRepository.findAll(spec, pageRequest);
+
+        // 3. 转换结果
+        return PageResult.<ProductDTO>builder()
+            .total(page.getTotalElements())
+            .page(query.getPage())
+            .pageSize(query.getPageSize())
+            .items(page.getContent().stream().map(mapper::toDTO).collect(Collectors.toList()))
+            .build();
+    }
+}
+```
+
+**分页响应**：
+```java
+@Data
+@Builder
+public class PageResult<T> {
+    private long total;
+    private int page;
+    private int pageSize;
+    private List<T> items;
+}
+```
+
+## 开发流程
+
+1. **分析需求**：理解业务场景，设计数据模型
+2. **创建实体**：根据数据表创建JPA Entity或MyBatis Model
+3. **创建Repository**：继承JpaRepository或定义Mapper接口
+4. **编写Service**：实现业务逻辑和数据访问
+5. **添加事务**：使用@Transactional管理事务边界
+6. **处理异常**：抛出自定义业务异常
+7. **编写测试**：单元测试、集成测试
+8. **性能优化**：添加索引、优化查询、避免N+1问题
+
+**原则**：
+- 尽量使用JPA命名查询，减少手动SQL
+- 复杂查询使用@Query注解或XML配置
+- 读写分离操作标记readOnly = true
+- 批量操作使用saveAll、deleteAll
+- 分页查询限制最大页码数
+- 关联查询注意N+1问题，使用JOIN FETCH
