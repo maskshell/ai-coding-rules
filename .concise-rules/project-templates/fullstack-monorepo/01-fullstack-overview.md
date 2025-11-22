@@ -1,0 +1,56 @@
+# 全栈开发概览（精简版）
+
+## 技术栈
+
+**前端：**
+
+- React 18 + TypeScript + Vite
+- Tailwind CSS
+
+**后端：**
+
+- FastAPI + Python 3.11+
+- SQLAlchemy + Pydantic
+
+**数据库：**
+
+- PostgreSQL + Redis
+
+## 项目结构
+
+```text
+monorepo/
+├── frontend/          # React
+├── backend/           # Python/FastAPI
+├── packages/          # 共享代码
+└── docs/              # 文档
+```
+
+## API 设计流程
+
+1. 前后端共同设计 API 接口
+2. 后端用 Pydantic 定义 Schema
+3. 生成 OpenAPI schema
+4. 前端生成 TypeScript 类型
+
+## 前后端协作
+
+- 通过 API 契约解耦
+- 使用 Docker Compose 统一开发环境
+- 确保前后端命名一致
+
+## 开发流程
+
+1. 设计 API 契约
+2. 后端实现 API 和 Pydantic Schema
+3. 验证 API（Swagger UI）
+4. 前端生成 TypeScript 类型
+5. 前端实现组件和 API 调用
+6. 集成测试
+
+## Git 工作流
+
+- 单分支策略：同一分支修改前后端
+- Commit message: `feat(backend/api): add auth endpoints`
+- Commit message: `feat(frontend/auth): integrate login API`
+- 保持前后端代码同步提交

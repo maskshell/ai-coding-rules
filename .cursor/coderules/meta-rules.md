@@ -10,7 +10,7 @@
 
 ### 四层优先级体系
 
-```
+```text
 IDE层（通用） ← 优先级最低，最抽象
   ↓
 语言层（Python/JS/TS等）
@@ -24,13 +24,13 @@ IDE层（通用） ← 优先级最低，最抽象
 
 ### 何时创建哪一层
 
-**创建 IDE 层规则（`ide-layer/rulesets/`）当**：
+**创建 IDE 层规则（`full-rules/ide-layer/rulesets/`）当**:
 
 - 规则适用于所有编程语言和框架
 - 规则涉及通用编程原则（代码质量、可读性、安全性）
 - 规则是关于 AI 助手行为的偏好
 
-**创建项目层规则（`project-templates/{project}/.cursor/coderules/`）当**：
+**创建项目层规则（`full-rules/project-templates/{project}/.cursor/coderules/`）当**:
 
 - 规则特定于某个框架或技术栈
 - 规则涉及具体的编码实践和模式
@@ -54,7 +54,7 @@ IDE层（通用） ← 优先级最低，最抽象
 
 **正确示例**：
 
-```
+```text
 01-general.md
 02-testing.md
 01-react-basics.md
@@ -63,7 +63,7 @@ IDE层（通用） ← 优先级最低，最抽象
 
 **错误示例**：
 
-```
+```text
 react.md                    # 缺少数字前缀
 01_React_Rules.md           # 使用下划线和大小写混合
 01 general rules.md         # 使用空格
@@ -103,7 +103,7 @@ react.md                    # 缺少数字前缀
 
 **推荐格式**：
 
-```markdown
+````markdown
 ### 组件命名
 
 - 文件名使用 PascalCase（如 `UserProfile.tsx`）
@@ -119,10 +119,10 @@ export function UserProfile() { ... }
 // Bad
 export function user_profile() { ... }
 ```
-
-```
+````
 
 **禁止使用**：
+
 ```markdown
 ❌ 你必须这样命名组件
 ❌ 错误的命名方式会导致问题
@@ -241,7 +241,316 @@ export function user_profile() { ... }
 ❌ 不推荐：不能使用深层次的嵌套
 ```
 
-## 四、创建新模板的流程
+## 四、从完整版创建精简版规则
+
+### 精简原则
+
+**目标**：在保持核心指令不变的前提下，token 消耗减少 70-80%。
+
+**核心策略**：
+
+1. **删除解释性文字**：保留"做什么"，删除"为什么"的详细解释
+2. **删除过多示例**：从 3-5 个示例减少到 1-2 个关键示例
+3. **删除重复说明**：每个概念只保留最核心的表述
+4. **使用简洁语法**：如用 `-` 列表替代段落文字
+5. **保留结构**：数字前缀、标题层级保持不变
+
+### 转换步骤
+
+#### 步骤 1：分析完整版结构
+
+**阅读完整版规则**，识别以下部分：
+
+```markdown
+完整版结构：
+├── 标题和元数据（保留）
+├── 详细解释（删除）
+├── 多个示例（精简）
+├── 背景说明（删除）
+├── 注意事项（保留核心）
+└── 参考链接（可选保留）
+```
+
+#### 步骤 2：转换内容
+
+**对于每个章节**：
+
+1. **保留标题层级**（`#`, `##`, `###`）数字前缀
+2. **提取核心指令**（通常是列表项的第一句）
+3. **删除修饰性文字**
+4. **精简示例数量**
+5. **保留代码示例结构**
+
+**转换示例**：
+
+完整版：
+
+````markdown
+### 组件命名
+
+文件名使用 PascalCase（如 `UserProfile.tsx`）。使用这种命名方式的原因是保持一致性，便于在文件系统中搜索和识别组件。所有组件都应遵循此规范，以确保团队成员能够快速定位文件。
+
+**原因**：保持一致性，便于文件搜索和导入。这个约定来自于社区最佳实践，被广泛应用于大型项目中。
+
+**示例**:
+```tsx
+// Good - 清晰的命名
+export function UserProfile() { ... }
+
+export function ProductCard() { ... }
+
+// Good - 描述组件用途
+export function LoginForm() { ... }
+
+// Bad - 使用下划线
+export function user_profile() { ... }
+
+// Bad - 太泛化
+export function Card() { ... }
+```
+
+**注意事项**:
+
+- 组件名应该清晰表达其用途
+- 避免使用缩写，除非是通用缩写（如 `API`）
+- 目录名可以使用 kebab-case 或 PascalCase，但在项目中保持一致
+
+````
+
+精简版：
+
+````markdown
+### 组件命名
+
+- 文件名使用 PascalCase（如 `UserProfile.tsx`）
+- 组件名与文件名保持一致
+- 避免拼音命名，使用语义化英文
+
+**示例**:
+```tsx
+// Good
+export function UserProfile() { ... }
+
+// Bad
+export function user_profile() { ... }
+```
+````
+
+#### 步骤 3：优化格式
+
+**格式优化技巧**：
+
+1. **使用紧凑列表**：
+
+   ```markdown
+   不使用：
+   - 这是第一条规则。这条规则非常重要，因为...
+   
+   使用：
+   - 这是第一条规则
+   ```
+
+2. **删除冗余标题**：
+
+   ```markdown
+   删除：
+   ### 为什么使用这个规范
+   
+   保留：
+   ### 命名规范
+   - 理由：（合并到规则中）
+   ```
+
+3. **合并短规则**：
+
+   ```markdown
+   合并前：
+   - 使用 PascalCase 命名
+   - 保持一致性
+   
+   合并后：
+   - 使用 PascalCase 命名，保持一致性
+   ```
+
+#### 步骤 4：验证精简结果
+
+**检查清单**：
+
+1. [ ] 保留了所有核心指令（AI 能正确执行）
+1. [ ] 删除了 70-80% 的解释性文字
+1. [ ] 示例数量从 3-5 个减少到 1-2 个
+1. [ ] 结构保持一致（标题层级、数字前缀）
+1. [ ] Token 数量确实大幅减少（90% → 20-30%）
+
+**测试方法**：
+
+1. 选择一个具体任务（如"创建一个用户登录组件"）
+2. 让 AI 使用精简版规则生成代码
+3. 比较生成结果与完整版是否一致
+4. 如果不一致，检查是否删除了关键指令
+
+### 转换对比表
+
+| 要素 | 完整版 | 精简版 | 处理建议 |
+|------|--------|--------|----------|
+| 标题 | `# React 基础规范` | `# React 基础规范` | **保留** |
+| 背景说明 | 200-300 字解释 | 删除 | **删除** |
+| 规则描述 | 段落 + 解释 | 列表项 | **精简** |
+| 示例数量 | 3-5 个 | 1-2 个 | **精简约 70%** |
+| "为什么" | 详细解释 | 保留核心理由 | **精简到 1 句话** |
+| 注意事项 | 多个要点 | 1-2 个关键要点 | **保留最重要的** |
+| 参考链接 | 多个链接 | 可选保留 | **可选** |
+| 总字数 | 500-800 字 | 100-150 字 | **减少 75-80%** |
+| Token 消耗 | ~500-800 tokens | ~100-150 tokens | **减少 75-80%** |
+
+### 常见转换模式
+
+#### 模式 1：详细解释 → 简明列表
+
+完整版：
+
+```markdown
+### 错误处理
+
+在处理错误时，我们应该优先考虑用户体验。当有错误发生时，不应该让应用崩溃或者显示技术性的错误信息给用户看。相反，应该提供友好的错误提示。
+
+**原因**：友好的错误提示可以减少用户的挫败感...
+```
+
+精简版：
+
+```markdown
+### 错误处理
+
+- 提供友好的用户提示，避免技术性错误信息
+- 防止应用崩溃
+```
+
+#### 模式 2：多个示例 → 1-2 个示例
+
+完整版：
+
+````markdown
+**示例**:
+```tsx
+// 示例 1: 基础用法
+function Example1() { ... }
+
+// 示例 2: 带参数
+function Example2(props) { ... }
+
+// 示例 3: 完整场景
+function Example3() {
+  // 多行代码...
+}
+```
+````
+
+精简版：
+
+````markdown
+**示例**:
+```tsx
+// 基础用法
+function Example(props) { ... }
+```
+````
+
+#### 模式 3：章节合并
+
+完整版：
+
+```markdown
+### 命名规范
+
+文件名使用 PascalCase。
+
+### 组件命名
+
+组件名与文件名保持一致。
+
+### 工具函数命名
+
+工具函数使用 camelCase。
+```
+
+精简版：
+
+```markdown
+### 命名
+
+- 文件名和组件：PascalCase（`UserProfile.tsx`）
+- 工具函数：camelCase（`formatDate()`）
+```
+
+### 特殊处理
+
+#### 必须保留的内容
+
+1. **Context7 使用规则**：
+
+   ```markdown
+   精简版必须保留：
+   ### Context7 使用
+   
+   在涉及第三方库时，自动使用 Context7 查询最新文档。
+   
+   **何时使用**：
+   - 涉及第三方库的代码生成
+   - 提供设置或配置步骤
+   - 查询库/API 文档
+   ```
+
+2. **Critical 规则**：
+
+   ```markdown
+   完整版可能有很多解释，但精简版必须保留核心指令：
+   
+   ### 安全规范
+   
+   - 永不提交敏感信息（.env、API keys）
+   - 验证用户输入，防止注入攻击
+   ```
+
+3. **数字顺序依赖的规则**：
+
+   ```markdown
+   如果规则有依赖关系（02 依赖 01），必须保留结构：
+   01-general.md      # 基础概念
+   02-advanced.md     # 高级用法（依赖基础）
+   ```
+
+#### 可以删除的内容
+
+1. **详细背景**：原理、历史、社区讨论
+2. **边缘案例**：不常见的边界情况
+3. **重复说明**：在不同章节重复的内容
+4. **主观评价**："优雅"、"漂亮"、"现代"等主观描述
+5. **过长的参考链接**：保留 1-2 个最重要的
+
+### 自动化工具（可选）
+
+**未来可以开发**：
+
+```bash
+# 理想命令（尚未实现）
+# 从完整版自动生成精简版
+npm run convert-to-concise -- full-rules/ide-layer/01-general.md
+
+# 输出：.concise-rules/ide-layer/01-general.md
+```
+
+**当前手动流程**：
+
+````bash
+   # 1. 复制完整版到精简版目录
+        cp full-rules/ide-layer/rulesets/01-general.md .concise-rules/ide-layer/
+   # 2. 手动精简内容（按本指南）
+   # 3. 验证 Token 减少量
+        # 使用工具计算 token 数量
+````
+
+## 五、创建新模板的流程
 
 ### 步骤 1：确定模板类型
 
@@ -255,8 +564,8 @@ export function user_profile() { ... }
 
 **标准结构**：
 
-```bash
-project-templates/new-framework-app/
+```text
+full-rules/project-templates/new-framework-app/
 ├── .cursor/
 │   └── coderules/          # AI执行的规则
 │       ├── 01-{framework}-basics.md
@@ -349,7 +658,7 @@ project-templates/new-framework-app/
 - docs/rule-writing-guide.md：在参考资料中添加新模板链接
 - 在提交信息中明确说明新增内容
 
-## 五、验证清单
+## 六、验证清单
 
 创建或更新规则文件前，使用此清单检查：
 
@@ -383,6 +692,14 @@ project-templates/new-framework-app/
 - [ ] 模式指导与框架匹配（React用Hooks/Reducer，Vue用Composables/Pinia）
 - [ ] 不教条化，提供选择依据
 
+### 精简版转换（如适用）
+
+- [ ] 保留了所有核心指令
+- [ ] 删除了 70-80% 的解释性文字
+- [ ] 示例数量从 3-5 个减少到 1-2 个
+- [ ] 结构保持一致（标题层级、数字前缀）
+- [ ] Token 数量确实大幅减少
+
 ### 文档更新
 
 - [ ] 根目录 README.md 更新目录结构（新项目）
@@ -390,14 +707,15 @@ project-templates/new-framework-app/
 - [ ] docs/rule-writing-guide.md 的参考资料章节更新
 - [ ] 提交信息使用 Conventional Commits 格式
 
-## 六、常见错误及避免
+## 七、常见错误及避免
 
 ### 错误 1：在 IDE 层放框架特定规则
 
-**错误示例**（在 `ide-layer/rulesets/01-general.md`）：
+**错误示例**（在 `full-rules/ide-layer/rulesets/01-general.md`）：
 
 ```markdown
 ❌ 错误
+
 ### React Hooks 使用
 
 - 使用 useState 管理组件状态
@@ -417,7 +735,7 @@ project-templates/new-framework-app/
 
 ```markdown
 ✅ 正确（在项目层）
-project-templates/react-app/.cursor/coderules/01-react-basics.md:
+full-rules/project-templates/react-app/.cursor/coderules/01-react-basics.md:
 
 ### Hooks 使用
 
@@ -465,7 +783,7 @@ project-templates/react-app/.cursor/coderules/01-react-basics.md:
 
 **正确做法**：
 
-```markdown
+````markdown
 ✅ 正确
 ### 组件命名
 
@@ -483,11 +801,12 @@ export function user_profile() { ... }
 export function Card() { ... }  // 太泛化
 ```
 
-```
+````
 
 ### 错误 4：缺少敏捷原则
 
 **错误示例**（在项目层的 docs/coding-standards.md）：
+
 ```markdown
 ❌ 错误（缺少开发流程章节）
 ## 技术栈
@@ -530,23 +849,23 @@ export function Card() { ... }  // 太泛化
 - 通过重构逐步改善代码质量
 ```
 
-## 七、参考资料和进一步阅读
+## 八、参考资料和进一步阅读
 
 ### 本项目的规则示例
 
-- [IDE 层规则](./ide-layer/rulesets/)
+- [IDE 层规则](./full-rules/ide-layer/rulesets/)
 - React 项目：
-  - AI规则：[.cursor/coderules](./project-templates/react-app/.cursor/coderules/)
-  - 文档：[coding-standards.md](./project-templates/react-app/docs/coding-standards.md)
+  - AI规则：[.cursor/coderules](./full-rules/project-templates/react-app/.cursor/coderules/)
+  - 文档：[coding-standards.md](./full-rules/project-templates/react-app/docs/coding-standards.md)
 - Vue 项目：
-  - AI规则：[.cursor/coderules](./project-templates/vue-app/.cursor/coderules/)
-  - 文档：[coding-standards.md](./project-templates/vue-app/docs/coding-standards.md)
+  - AI规则：[.cursor/coderules](./full-rules/project-templates/vue-app/.cursor/coderules/)
+  - 文档：[coding-standards.md](./full-rules/project-templates/vue-app/docs/coding-standards.md)
 - Python 后端：
-  - AI规则：[.cursor/coderules](./project-templates/python-backend/.cursor/coderules/)
-  - 文档：[coding-standards.md](./project-templates/python-backend/docs/coding-standards.md)
+  - AI规则：[.cursor/coderules](./full-rules/project-templates/python-backend/.cursor/coderules/)
+  - 文档：[coding-standards.md](./full-rules/project-templates/python-backend/docs/coding-standards.md)
 - 全栈项目：
-  - AI规则：[.cursor/coderules](./project-templates/fullstack-monorepo/.cursor/coderules/)
-  - 文档：[coding-standards.md](./project-templates/fullstack-monorepo/docs/coding-standards.md)
+  - AI规则：[.cursor/coderules](./full-rules/project-templates/fullstack-monorepo/.cursor/coderules/)
+  - 文档：[coding-standards.md](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 
 ### 外部参考
 

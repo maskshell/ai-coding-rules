@@ -6,13 +6,64 @@
 
 ```text
 vibe-coding/
-├── ide-layer/                          # IDE 层级规则（最通用）
-├── project-templates/                  # 项目模板
-│   ├── react-app/                      # React应用
-│   ├── vue-app/                        # Vue应用
-│   ├── python-backend/                 # Python后端
-│   └── fullstack-monorepo/             # 全栈项目
+├── full-rules/                         # 完整版规则（文档和模板）
+│   ├── ide-layer/                      # IDE 层级规则（最通用）
+│   └── project-templates/              # 项目模板
+│       ├── react-app/
+│       ├── vue-app/
+│       ├── python-backend/
+│       └── fullstack-monorepo/
+├── .concise-rules/                     # 精简版规则（推荐日常使用）
+│   ├── ide-layer/                      # IDE 层精简规则
+│   │   ├── 01-general.md
+│   │   └── ...
+│   ├── project-templates/              # 项目层精简规则
+│   │   ├── react-app/
+│   │   ├── vue-app/
+│   │   ├── python-backend/
+│   │   └── fullstack-monorepo/
+│   └── README.md                       # 精简版使用指南
+├── docs/                               # 指导性文档
+│   ├── rule-writing-guide.md
+│   └── vibe-coding-tools.md
+└── README.md
 ```
+
+## 双轨制规则
+
+本项目提供**两套规则系统**，平衡可读性与执行效率：
+
+### ⚡ 精简版（.concise-rules/）【推荐日常使用】
+
+- **用途**：AI 执行、提高效率、降低成本
+- **特点**：简洁、可操作、token 消耗减少 73%
+- **适用场景**：日常开发、AI 辅助编程
+- **Token 消耗**：~700-1,000 tokens
+- **文件数量**：13 个规则文件
+- **快速开始**：
+
+  ```bash
+  # 复制精简版规则到 IDE 配置
+  cp .concise-rules/ide-layer/* ~/.cursor/coderules/ &&
+  cp .concise-rules/project-templates/react-app/* ~/.cursor/coderules/
+  ```
+
+### 📦 完整版（full-rules/）
+
+- **用途**：人类阅读、学习理解、团队培训
+- **特点**：详细、全面、包含丰富示例
+- **适用场景**：学习规则设计思路、制定团队规范、深度理解
+- **Token 消耗**：~2,600-3,900 tokens
+- **文件数量**：21 个规则文件，总计 2,998 行
+- **使用指南**：
+  - [IDE层使用说明](./full-rules/ide-layer/README.md)
+  - [规则编写指南](./docs/rule-writing-guide.md)
+  - [Vibe Coding 工具推荐](./docs/vibe-coding-tools.md)
+
+**选择建议**：
+
+- **新用户**：先浏览完整版理解规则设计思路，切换到精简版日常使用
+- **有经验的用户**：直接使用精简版，需要时查阅完整版的特定部分
 
 ## 使用原则
 
@@ -28,12 +79,40 @@ vibe-coding/
 
 ## 详细文档
 
-- [IDE层使用说明](./ide-layer/README.md)
-- [React应用](./project-templates/react-app/docs/coding-standards.md)
-- [Vue应用](./project-templates/vue-app/docs/coding-standards.md)
-- [Python后端](./project-templates/python-backend/docs/coding-standards.md)
-- [全栈项目](./project-templates/fullstack-monorepo/docs/coding-standards.md)
+- [IDE层使用说明](./full-rules/ide-layer/README.md)
+- [React应用](./full-rules/project-templates/react-app/docs/coding-standards.md)
+- [Vue应用](./full-rules/project-templates/vue-app/docs/coding-standards.md)
+- [Python后端](./full-rules/project-templates/python-backend/docs/coding-standards.md)
+- [全栈项目](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 - [规则编写指南（含敏捷和设计模式指导）](./docs/rule-writing-guide.md)
+
+## 🔧 工具推荐
+
+为了获得更好的 Vibe Coding 体验，我们推荐使用以下工具：
+
+- **[Context7 MCP Server](https://github.com/upstash/context7)** ⭐⭐⭐⭐⭐
+  - 实时获取最新 API 文档和代码示例
+  - 消除 AI 幻觉，确保代码准确性
+  - 降低代码错误率 55%
+  - **系统要求**: Node.js ≥ v18.0.0
+  - **快速安装**: `npx -y @upstash/context7-mcp --api-key YOUR_API_KEY`
+  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#context7-mcp-server-)
+
+- **[ast-grep](https://ast-grep.github.io/)** ⭐⭐⭐⭐☆
+  - 基于 AST 的代码搜索和重构工具
+  - 验证 AI 生成代码的质量
+  - 支持 40+ 种编程语言
+  - **安装**: `npm i -g @ast-grep/cli`
+  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#ast-grep-)
+
+- **[Knowledge Graph Memory Server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)** ⭐⭐⭐⭐☆
+  - 跨会话保持项目上下文
+  - 积累项目知识和经验
+  - 适合长期项目开发
+  - **安装**: `npm install @modelcontextprotocol/server-memory`
+  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#knowledge-graph-memory-server-)
+
+详细使用指南请参考 [Vibe Coding 工具推荐指南](./docs/vibe-coding-tools.md)。
 
 ## 如何贡献
 

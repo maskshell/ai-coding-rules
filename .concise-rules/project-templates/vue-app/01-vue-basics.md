@@ -1,0 +1,49 @@
+# Vue 基础规范（精简版）
+
+## 组件结构
+
+```vue
+<template>
+  <div class="component-name">
+    <!-- 模板内容 -->
+  </div>
+</template>
+
+<script setup lang="ts">
+// Props 定义
+interface Props {
+  modelValue: string
+}
+
+const props = defineProps<Props>()
+</script>
+
+<style scoped>
+/* 样式 */
+</style>
+```
+
+## Composition API
+
+- 使用 `ref()` 声明基本类型和对象
+- 使用 `computed()` 处理派生状态
+- 使用 `reactive()` 声明复杂对象
+- 使用 `readonly()` 保护不应修改的状态
+
+## Props 和 Emits
+
+- 使用 TypeScript 接口定义 props
+- 使用 `withDefaults` 提供默认值
+- 显式定义 emits 和载荷类型
+
+## 可复用逻辑
+
+- 提取到 composables（以 use 开头）
+- 保持单一职责
+- 可测试、可组合
+
+## 命名
+
+- 组件文件名：PascalCase（UserProfile.vue）
+- composable：use 前缀
+- 工具函数：camelCase

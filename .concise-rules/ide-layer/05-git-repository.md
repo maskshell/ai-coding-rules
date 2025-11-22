@@ -1,0 +1,53 @@
+# Git 仓库管理（精简版）
+
+## Commit
+
+**时机：**
+
+- 完成一个逻辑完整的功能点
+- 修复一个 bug（包括验证）
+- 重构一小部分代码
+- 添加或更新测试
+- 更新文档
+
+**粒度：**
+
+- 小提交，只解决一个问题
+- 避免超过 20 个文件的改动
+- 每个 commit 都应能编译/运行
+
+**message 格式：**
+
+```text
+type(scope): subject
+
+type: feat, fix, docs, style, refactor, test, chore
+subject: 简短描述，≤50字符，首字母小写
+```
+
+## Branch
+
+- `main`: 生产环境
+- `develop`: 集成开发（可选）
+- `feature/*`: 新功能
+- `bugfix/*`: Bug 修复
+- `hotfix/*`: 紧急修复
+
+## Pull Request
+
+- 标题格式同 commit
+- 描述改动原因、内容和测试方法
+- 至少 1-2 名代码审查
+
+## Tag
+
+- 遵循语义化版本：`MAJOR.MINOR.PATCH`
+- 生产发布时打 tag
+
+## 提交前检查
+
+- [ ] 代码可编译/运行
+- [ ] 测试通过
+- [ ] 文档已更新
+- [ ] Commit message 清晰
+- [ ] 没有提交敏感信息

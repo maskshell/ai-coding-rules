@@ -22,3 +22,8 @@ yarn-error.log*
 node_modules/
 __pycache__/
 *.pyc
+
+# Context7 MCP Server
+.context7/
+memory.json
+context7.log
