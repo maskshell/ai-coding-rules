@@ -326,14 +326,14 @@ logging:
 
 2. **HTTP 方法** 语义化：
 
-| 操作 | HTTP 方法 | URL 示例 |
-|------|----------|----------|
-| 查询列表 | GET | `/users` |
-| 查询单个 | GET | `/users/{id}` |
-| 新增 | POST | `/users` |
-| 完全更新 | PUT | `/users/{id}` |
-| 部分更新 | PATCH | `/users/{id}` |
-| 删除 | DELETE | `/users/{id}` |
+   | 操作 | HTTP 方法 | URL 示例 |
+   |------|----------|----------|
+   | 查询列表 | GET | `/users` |
+   | 查询单个 | GET | `/users/{id}` |
+   | 新增 | POST | `/users` |
+   | 完全更新 | PUT | `/users/{id}` |
+   | 部分更新 | PATCH | `/users/{id}` |
+   | 删除 | DELETE | `/users/{id}` |
 
 3. **控制器方法示例**：
 

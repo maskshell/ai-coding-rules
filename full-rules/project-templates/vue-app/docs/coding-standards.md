@@ -83,6 +83,7 @@ const localValue = computed({
 - 以 use 作为前缀命名（useAuth.ts）
 
 **示例**：
+
 ```vue
 <script setup lang="ts">
 /**
@@ -136,7 +137,8 @@ onMounted(async () => {
 - **Scope**：使用组件名、composable 名或功能模块作为 scope
 
 **示例**：
-```
+
+```text
 feat(components): add UserProfileCard component
   - Implement template with Composition API
   - Add props validation using TypeScript
@@ -163,30 +165,35 @@ docs(store): update Pinia store documentation
 Vue 项目特有的 commit 时机：
 
 1. **完成一个 Vue 组件的开发**：模板、脚本、样式、测试
+
    ```bash
    git add src/components/UserProfileCard/
    git commit -m "feat(components): add UserProfileCard with Composition API"
    ```
 
 2. **添加一个 composable**：逻辑、类型、测试
+
    ```bash
    git add src/composables/useAuth.ts src/composables/useAuth.test.ts
    git commit -m "feat(composables): add useAuth for authentication"
    ```
 
 3. **添加 Pinia store**：state、getters、actions
+
    ```bash
    git add src/stores/userStore.ts
    git commit -m "feat(store): add userStore with auth actions"
    ```
 
 4. **更新 Vue Router 配置**：
+
    ```bash
    git add src/router/index.ts
    git commit -m "feat(router): add protected route guards"
    ```
 
 5. **修复响应式问题**：
+
    ```bash
    git commit -m "fix(reactivity): update ref handling in usePolling"
    ```

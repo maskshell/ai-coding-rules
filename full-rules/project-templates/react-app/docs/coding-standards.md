@@ -32,6 +32,7 @@ src/
 - **代码可读性优先**：选择团队最舒适的语言进行注释
 
 **示例**：
+
 ```tsx
 // Good: 英文命名，中文注释
 /**
@@ -99,7 +100,8 @@ export function YongHuZiLiao({ yonghu }: Props) {
 - **Scope**：使用组件名或功能模块作为 scope
 
 **示例**：
-```
+
+```text
 feat(auth): 添加 JWT 登录认证
   - 实现 LoginForm 组件
   - 添加 authService 处理 API 调用
@@ -126,29 +128,34 @@ docs(components): 更新 Button 组件文档
 React 项目特有的 commit 时机：
 
 1. **完成一个组件的开发**：包括组件、样式、测试
+
    ```bash
    git add src/components/LoginForm/
    git commit -m "feat(components): add LoginForm component with validation"
    ```
 
 2. **添加一个自定义 Hook**：逻辑和测试
+
    ```bash
    git add src/hooks/useAuth.ts src/hooks/useAuth.test.ts
    git commit -m "feat(hooks): add useAuth hook for authentication"
    ```
 
 3. **集成一个 API 端点**：服务层和组件更新
+
    ```bash
    git add src/services/authService.ts src/pages/LoginPage.tsx
    git commit -m "feat(auth): integrate login API endpoint"
    ```
 
 4. **修复渲染问题**：
+
    ```bash
    git commit -m "fix(dashboard): resolve memory leak in data polling"
    ```
 
 5. **性能优化**：
+
    ```bash
    gt commit -m "perf(list): memoize list items to reduce re-renders"
    ```

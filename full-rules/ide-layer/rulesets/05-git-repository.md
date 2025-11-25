@@ -35,7 +35,7 @@
 
 遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范：
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -78,7 +78,7 @@
 
 ### 示例
 
-```
+```text
 feat(auth): 添加用户登录功能
 
 实现 JWT 认证机制，包括：
@@ -89,7 +89,7 @@ feat(auth): 添加用户登录功能
 Closes #123
 ```
 
-```
+```text
 fix(validation): 修复邮箱验证正则表达式
 
 之前的正则表达式无法正确验证带加号的邮箱地址，
@@ -98,7 +98,7 @@ fix(validation): 修复邮箱验证正则表达式
 Fixes #456
 ```
 
-```
+```text
 docs(readme): 更新部署说明
 
 添加 Docker 部署的详细步骤，包括环境变量配置。
@@ -202,10 +202,10 @@ docs(readme): 更新部署说明
 
 ### 标签命名
 
-```
-v1.0.0
-v2.1.3
-v1.0.0-beta.1
+```markdown
+- v1.0.0
+- v2.1.3
+- v1.0.0-beta.1
 ```
 
 ## 提交前的检查清单

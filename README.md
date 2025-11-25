@@ -1,11 +1,13 @@
-# Vibe Coding Rules
+# AI Coding Rules
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 分层的 AI Rules 配置示例，满足不同层面的 AI 编码助手需求。
 
 ## 目录结构
 
 ```text
-vibe-coding/
+ai-coding-rules/
 ├── full-rules/                         # 完整版规则（文档和模板）
 │   ├── ide-layer/                      # IDE 层级规则（最通用）
 │   └── project-templates/              # 项目模板
@@ -25,8 +27,11 @@ vibe-coding/
 │   └── README.md                       # 精简版使用指南
 ├── docs/                               # 指导性文档
 │   ├── rule-writing-guide.md
-│   └── vibe-coding-tools.md
-└── README.md
+│   └── ai-coding-tools.md
+├── README.md
+├── CONTRIBUTING.md                     # 贡献指南
+├── LICENSE                             # MIT 许可证
+└── CHANGELOG.md                        # 更新日志
 ```
 
 ## 双轨制规则
@@ -58,7 +63,7 @@ vibe-coding/
 - **使用指南**：
   - [IDE层使用说明](./full-rules/ide-layer/README.md)
   - [规则编写指南](./docs/rule-writing-guide.md)
-  - [Vibe Coding 工具推荐](./docs/vibe-coding-tools.md)
+  - [AI 编码工具推荐](./docs/ai-coding-tools.md)
 
 **选择建议**：
 
@@ -73,9 +78,43 @@ vibe-coding/
 
 ## 快速开始
 
-1. 将 `ide-layer/rulesets/` 中的所有 `.md` 文件复制到 `~/.cursor/coderules/`
-2. 根据项目类型，复制对应模板的 `.cursor/coderules/` 到项目根目录
-3. 在项目的 `.cursor/coderules/` 中添加项目特定的规则
+### 步骤 1：安装 IDE 层规则
+
+将 IDE 层规则复制到 Cursor 配置目录：
+
+```bash
+# 使用精简版（推荐）
+cp .concise-rules/ide-layer/* ~/.cursor/coderules/
+
+# 或使用完整版
+cp full-rules/ide-layer/rulesets/* ~/.cursor/coderules/
+```
+
+### 步骤 2：添加项目模板规则
+
+根据项目类型，复制对应的模板规则到项目根目录：
+
+```bash
+# 进入你的项目目录
+cd /path/to/your/project
+
+# 创建 .cursor/coderules 目录
+mkdir -p .cursor/coderules
+
+# 复制项目模板规则（以 React 为例）
+cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/coderules/
+```
+
+### 步骤 3：自定义项目规则
+
+在项目的 `.cursor/coderules/` 目录中添加项目特定的规则文件。
+
+**提示**：使用符号链接可以保持规则同步更新：
+
+```bash
+# 使用符号链接（推荐）
+ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/coderules/
+```
 
 ## 详细文档
 
@@ -88,7 +127,7 @@ vibe-coding/
 
 ## 🔧 工具推荐
 
-为了获得更好的 Vibe Coding 体验，我们推荐使用以下工具：
+为了获得更好的 AI 编码体验，我们推荐使用以下工具：
 
 - **[Context7 MCP Server](https://github.com/upstash/context7)** ⭐⭐⭐⭐⭐
   - 实时获取最新 API 文档和代码示例
@@ -96,27 +135,32 @@ vibe-coding/
   - 降低代码错误率 55%
   - **系统要求**: Node.js ≥ v18.0.0
   - **快速安装**: `npx -y @upstash/context7-mcp --api-key YOUR_API_KEY`
-  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#context7-mcp-server-)
+  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#context7-mcp-server-)
 
 - **[ast-grep](https://ast-grep.github.io/)** ⭐⭐⭐⭐☆
   - 基于 AST 的代码搜索和重构工具
   - 验证 AI 生成代码的质量
   - 支持 40+ 种编程语言
   - **安装**: `npm i -g @ast-grep/cli`
-  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#ast-grep-)
+  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#ast-grep-)
 
 - **[Knowledge Graph Memory Server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)** ⭐⭐⭐⭐☆
   - 跨会话保持项目上下文
   - 积累项目知识和经验
   - 适合长期项目开发
   - **安装**: `npm install @modelcontextprotocol/server-memory`
-  - **配置**: [详细配置指南](./docs/vibe-coding-tools.md#knowledge-graph-memory-server-)
+  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#knowledge-graph-memory-server-)
 
-详细使用指南请参考 [Vibe Coding 工具推荐指南](./docs/vibe-coding-tools.md)。
+详细使用指南请参考 [AI 编码工具推荐指南](./docs/ai-coding-tools.md)。
 
 ## 如何贡献
 
-如果你想添加新的项目模板或改进现有规则，请参考 [规则编写指南](./docs/rule-writing-guide.md)。该文档详细说明了：
+如果你想添加新的项目模板或改进现有规则，请参考：
+
+- [贡献指南](./CONTRIBUTING.md) - 了解贡献流程和规范
+- [规则编写指南](./docs/rule-writing-guide.md) - 详细的规则编写说明
+
+规则编写指南包含：
 
 - 规则的分层架构和优先级
 - 文件命名和组织规范
@@ -124,3 +168,7 @@ vibe-coding/
 - 软件设计模式的层次区分
 - 创建新模板的完整流程
 - 常见错误及避免方法
+
+## 许可证
+
+本项目采用 [MIT License](./LICENSE) 许可证。

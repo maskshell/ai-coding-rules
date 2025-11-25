@@ -161,7 +161,7 @@ class User(Base):
 
 ### Monorepo 结构
 
-```
+```text
 monorepo/
 ├── frontend/          # 前端代码（React）
 ├── backend/           # 后端代码（Python/FastAPI）
@@ -176,7 +176,8 @@ monorepo/
 - **Scope**: 包含项目名和模块（如 `frontend/auth`, `backend/api`, `shared/types`）
 
 **示例**：
-```
+
+```text
 feat(frontend/auth): add login page with JWT integration
   - Create LoginForm component
   - Add authentication context
@@ -205,6 +206,7 @@ chore(shared): update shared types package
 - 确保前端和后端代码同步提交
 
 **示例**：开发用户认证功能
+
 ```bash
 git checkout -b feature/PROJ-123-user-authentication
 
@@ -237,12 +239,14 @@ git push origin feature/PROJ-123-user-authentication
 全栈项目特有的 commit 时机：
 
 1. **设计 API 契约**：前后端共同设计并文档化
+
    ```bash
    git add docs/api/auth-endpoints.md
    git commit -m "docs(api): design authentication API contract"
    ```
 
 2. **完成后端 API 实现**：
+
    ```bash
    git add backend/app/api/v1/routes/auth.py
    git add backend/app/services/user_service.py
@@ -251,17 +255,20 @@ git push origin feature/PROJ-123-user-authentication
    ```
 
 3. **验证 API 可用性**：使用 Swagger UI 测试
+
    ```bash
    git commit -m "test(backend): verify auth endpoints with Swagger UI"
    ```
 
 4. **生成前端类型**：从 OpenAPI schema
+
    ```bash
    git add frontend/src/types/api.ts
    git commit -m "feat(frontend/types): generate types from OpenAPI schema"
    ```
 
 5. **完成前端集成**：
+
    ```bash
    git add frontend/src/pages/LoginPage.tsx
    git add frontend/src/services/authService.ts
@@ -269,6 +276,7 @@ git push origin feature/PROJ-123-user-authentication
    ```
 
 6. **端到端测试**：
+
    ```bash
    git add tests/e2e/auth.spec.ts
    git commit -m "test(e2e): add authentication flow test"
@@ -279,6 +287,7 @@ git push origin feature/PROJ-123-user-authentication
 在 Monorepo 中，尽量保持前后端代码同步：
 
 ❌ 避免：前端大量提交，后端没有对应提交
+
 ```bash
 # Bad
 feat(frontend): add login form
@@ -287,6 +296,7 @@ feat(frontend): add API client  # 后端 API 还没准备好！
 ```
 
 ✅ 推荐：前后端协调提交
+
 ```bash
 # Good
 feat(backend): add authentication endpoints

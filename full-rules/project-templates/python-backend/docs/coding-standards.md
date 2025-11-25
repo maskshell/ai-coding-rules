@@ -70,6 +70,7 @@ app/
 - **代码可读性优先**：选择团队最舒适的语言进行注释
 
 **示例**：
+
 ```python
 # Good: 英文命名，清晰的文档字符串
 class UserService:
@@ -126,7 +127,8 @@ class YongHuFuWu:
 - **Scope**：使用模块名、服务名或 API 端点作为 scope
 
 **示例**：
-```
+
+```text
 feat(api): add JWT authentication endpoint
   - Implement /auth/login endpoint
   - Add Token schema with Pydantic
@@ -153,35 +155,41 @@ docs(models): update User model docstring
 Python 后端项目特有的 commit 时机：
 
 1. **设计并验证 Pydantic Schema**：
+
    ```bash
    git add app/api/v1/schemas/user.py
    git commit -m "feat(schemas): add UserCreate and UserResponse schemas"
    ```
 
 2. **实现 Service 层业务逻辑**：
+
    ```bash
    git add app/services/user_service.py app/services/user_service_test.py
    git commit -m "feat(services): implement UserService with create method"
    ```
 
 3. **添加 API 端点**：
+
    ```bash
    git add app/api/v1/routes/auth.py
    git commit -m "feat(api): add /auth/register endpoint"
    ```
 
 4. **添加数据库模型和迁移**：
+
    ```bash
    git add app/models/user.py alembic/versions/001_add_user_table.py
    git commit -m "feat(models): add User model with Alembic migration"
    ```
 
 5. **修复数据库查询性能**：
+
    ```bash
    git commit -m "perf(db): add index to users.email column"
    ```
 
 6. **更新依赖**：
+
    ```bash
    git add pyproject.toml poetry.lock
    git commit -m "chore(deps): update FastAPI to 0.104.0"

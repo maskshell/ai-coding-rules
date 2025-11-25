@@ -26,10 +26,10 @@
 
 ```bash
 # IDE 层规则
-ln -s /path/to/vibe-coding/.concise-rules/ide-layer/* ~/.cursor/coderules/
+ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/coderules/
 
 # 项目特定规则（进入项目后执行）
-ln -s /path/to/vibe-coding/.concise-rules/project-templates/react-app/* ~/.cursor/coderules/
+ln -s /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* ~/.cursor/coderules/
 ```
 
 ### Claude Code 用户
@@ -38,7 +38,7 @@ ln -s /path/to/vibe-coding/.concise-rules/project-templates/react-app/* ~/.curso
 
 ```json
 {
-  "rulesDirectory": "/path/to/vibe-coding/.concise-rules/ide-layer"
+  "rulesDirectory": "/path/to/ai-coding-rules/.concise-rules/ide-layer"
 }
 ```
 
@@ -46,7 +46,7 @@ ln -s /path/to/vibe-coding/.concise-rules/project-templates/react-app/* ~/.curso
 
 ```bash
 # 复制到项目根目录
-cp /path/to/vibe-coding/.concise-rules/project-templates/react-app/* .cursor/coderules/
+cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/coderules/
 ```
 
 ### 其他编辑器
