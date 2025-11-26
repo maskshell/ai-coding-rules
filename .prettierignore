@@ -1,0 +1,22 @@
+# Prettier 忽略文件
+
+# 依赖文件
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 构建输出
+dist/
+build/
+*.min.js
+*.min.css
+
+# 日志文件
+*.log
+
+# 其他
+.DS_Store
+*.swp
+*.swo
+*~

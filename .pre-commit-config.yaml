@@ -53,12 +53,15 @@ repos:
   # JSON 和 YAML 格式化（使用 prettier）
   # JSON: 与 IDE 内置格式化保持一致
   # YAML: 与 redhat.vscode-yaml 扩展保持一致
+  # 配置文件：.prettierrc.yaml
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
         types: [json, yaml]
         args: [--write]
+        # 确保包含 .github/workflows/ 目录下的 YAML 文件
+        files: \.(json|yaml|yml)$
 
   # 本地脚本检查
   - repo: local

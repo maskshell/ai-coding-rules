@@ -1,0 +1,21 @@
+# Prettier 配置
+# 与 redhat.vscode-yaml 扩展保持一致
+
+# 通用配置（适用于所有文件类型）
+# 行尾使用 LF
+endOfLine: "lf"
+# 缩进使用 2 个空格
+tabWidth: 2
+# 不使用 Tab
+useTabs: false
+# 打印宽度（行长度）
+printWidth: 80
+# 尾随逗号
+trailingComma: "none"
+# 对象括号间距
+bracketSpacing: true
+# 箭头函数参数括号
+arrowParens: "always"
+
+# YAML 特定配置
+# Prettier 对 YAML 的默认处理已经很好，主要使用通用配置
