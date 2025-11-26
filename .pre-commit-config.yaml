@@ -1,0 +1,54 @@
+repos:
+  # Commit message 格式检查（Conventional Commits）
+  # 遵循项目 Git 仓库管理规范：type(scope): subject
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [--strict]
+
+  # 敏感信息检查
+  # 防止提交密码、密钥等敏感信息（符合 Git 仓库管理规范）
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args: ['--baseline', '.secrets.baseline']
+        exclude: |
+          (?x)^(
+            .*\.lock\.json$|
+            .*\.log$|
+            .*\.pyc$|
+            __pycache__/.*
+          )$
+
+  # 本地脚本检查
+  - repo: local
+    hooks:
+      # Markdown 格式化（自动修复格式问题）
+      - id: markdown-format
+        name: Format Markdown files
+        entry: python scripts/format-md.py
+        language: system
+        types: [markdown]
+        pass_filenames: true
+        args: []
+      
+      # Markdown linting（检查格式，不自动修复）
+      - id: markdown-lint
+        name: Lint Markdown files
+        entry: python scripts/lint-md.py
+        language: system
+        types: [markdown]
+        pass_filenames: true
+        args: [--check]
+
+      # Python 代码语法检查
+      # 确保代码可编译/运行（符合 Git 仓库管理规范）
+      - id: python-check
+        name: Check Python code syntax
+        entry: python -m py_compile
+        language: system
+        types: [python]
+        pass_filenames: true
