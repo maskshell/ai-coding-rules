@@ -34,7 +34,9 @@ except ImportError:
 class MDCMigrator:
     """MDC 格式迁移器"""
 
-    def __init__(self, dry_run: bool = False, backup: bool = False, force: bool = False):
+    def __init__(
+        self, dry_run: bool = False, backup: bool = False, force: bool = False
+    ):
         self.dry_run = dry_run
         self.backup = backup
         self.force = force
@@ -125,7 +127,14 @@ class MDCMigrator:
         # 特定语言/框架规则通常按需应用
         if any(
             keyword in filename
-            for keyword in ["python", "react", "vue", "typescript", "javascript", "fastapi"]
+            for keyword in [
+                "python",
+                "react",
+                "vue",
+                "typescript",
+                "javascript",
+                "fastapi",
+            ]
         ):
             return False
 
@@ -141,9 +150,17 @@ class MDCMigrator:
         # 语言标签
         if "python" in filename or "python" in content_lower:
             tags.append("python")
-        if "typescript" in filename or "typescript" in content_lower or "ts" in filename:
+        if (
+            "typescript" in filename
+            or "typescript" in content_lower
+            or "ts" in filename
+        ):
             tags.append("typescript")
-        if "javascript" in filename or "javascript" in content_lower or "js" in filename:
+        if (
+            "javascript" in filename
+            or "javascript" in content_lower
+            or "js" in filename
+        ):
             tags.append("javascript")
 
         # 框架标签
@@ -381,4 +398,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

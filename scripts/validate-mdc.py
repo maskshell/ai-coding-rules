@@ -110,8 +110,11 @@ class MDCValidator:
             else:
                 # 简单的版本号格式检查
                 import re
+
                 if not re.match(r"^\d+\.\d+\.\d+$", metadata["version"]):
-                    self.warnings.append(f"version 格式可能不符合 SemVer: {metadata['version']}")
+                    self.warnings.append(
+                        f"version 格式可能不符合 SemVer: {metadata['version']}"
+                    )
 
         # 检查内容部分
         content_part = parts[2].strip() if len(parts) > 2 else ""
@@ -212,4 +215,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

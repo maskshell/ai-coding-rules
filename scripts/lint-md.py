@@ -218,9 +218,7 @@ def check_header_levels(content: str) -> List[str]:
     for header in headers:
         level = len(header)
         if level > MAX_HEADER_LEVEL:
-            errors.append(
-                f"标题层级过深: {header} (最多允许 {MAX_HEADER_LEVEL} 级)"
-            )
+            errors.append(f"标题层级过深: {header} (最多允许 {MAX_HEADER_LEVEL} 级)")
 
     return errors
 
@@ -246,8 +244,7 @@ def check_header_skipping(content: str) -> List[str]:
         # 检查是否跳级（当前级别大于前一级别 + 1）
         if current_level > previous_level + 1:
             errors.append(
-                f"标题跳级: {'#' * previous_level} → {'#' * current_level} "
-                f"(不允许跳级)"
+                f"标题跳级: {'#' * previous_level} → {'#' * current_level} (不允许跳级)"
             )
 
     return errors
@@ -267,9 +264,7 @@ def check_code_block_language_tags(content: str) -> List[str]:
     code_blocks = CODE_BLOCK_PATTERN.findall(content)
 
     # 找出缺少语言标签的代码块位置
-    empty_lang_blocks = [
-        i for i, lang in enumerate(code_blocks, 1) if not lang
-    ]
+    empty_lang_blocks = [i for i, lang in enumerate(code_blocks, 1) if not lang]
 
     if empty_lang_blocks:
         # 只显示前 5 个错误位置，避免输出过长
