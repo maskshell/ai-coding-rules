@@ -1,3 +1,16 @@
+---
+description: 测试规范（精简版）
+globs:
+- '**/*test*.py'
+- '**/*test*.ts'
+- '**/*test*.js'
+alwaysApply: false
+tags:
+- testing
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # 测试规范（精简版）
 
 ## 测试覆盖率

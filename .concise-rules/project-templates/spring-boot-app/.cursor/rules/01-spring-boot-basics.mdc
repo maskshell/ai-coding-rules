@@ -1,3 +1,14 @@
+---
+description: Spring Boot 基础规范（精简版）
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- security
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Spring Boot 基础规范（精简版）
 
 ## 项目结构

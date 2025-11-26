@@ -1,3 +1,15 @@
+---
+description: Python 后端规范（精简版）
+globs:
+- '**/*.py'
+alwaysApply: false
+tags:
+- python
+- fastapi
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Python 后端规范（精简版）
 
 ## 技术栈

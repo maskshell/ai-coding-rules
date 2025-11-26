@@ -1,3 +1,16 @@
+---
+description: Vue 基础规范（精简版）
+globs:
+- '**/*.vue'
+alwaysApply: false
+tags:
+- typescript
+- react
+- vue
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Vue 基础规范（精简版）
 
 ## 组件结构

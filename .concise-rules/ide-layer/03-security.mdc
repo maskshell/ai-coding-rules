@@ -1,3 +1,14 @@
+---
+description: 安全规范（精简版）
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- security
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # 安全规范（精简版）
 
 ## 输入验证

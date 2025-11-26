@@ -1,3 +1,17 @@
+---
+description: 全栈开发概览（精简版）
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- python
+- typescript
+- react
+- fastapi
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # 全栈开发概览（精简版）
 
 ## 技术栈
