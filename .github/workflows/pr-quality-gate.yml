@@ -58,21 +58,21 @@ jobs:
           script: |
             const fs = require('fs');
             const report = fs.readFileSync('pr-report.md', 'utf8');
-            
+
             // 查找是否已有评论
             const comments = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            
+
             const botComment = comments.data.find(
               comment => comment.user.type === 'Bot' && 
               comment.body.includes('PR 质量报告')
             );
-            
+
             const commentBody = report;
-            
+
             if (botComment) {
               // 更新现有评论
               await github.rest.issues.updateComment({
@@ -97,10 +97,9 @@ jobs:
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \
             --json | jq -r '.quality_score')
-          
+
           if [ "$SCORE" -lt 60 ]; then
             echo "::error::质量评分过低 ($SCORE/100)，请根据报告改进"
             exit 1
           fi
         continue-on-error: true
-
