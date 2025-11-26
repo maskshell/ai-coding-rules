@@ -14,7 +14,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        args: ['--baseline', '.secrets.baseline']
+        args: ["--baseline", ".secrets.baseline"]
         exclude: |
           (?x)^(
             .*\.lock\.json$|
@@ -22,6 +22,43 @@ repos:
             .*\.pyc$|
             __pycache__/.*
           )$
+
+  # Python 代码检查和格式化（Ruff）
+  # 与 IDE 中使用的 Ruff 扩展保持一致
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.1
+    hooks:
+      # Ruff lint（检查代码问题，自动修复）
+      - id: ruff
+        args: [--fix]
+        types: [python]
+      # Ruff format（格式化代码）
+      - id: ruff-format
+        types: [python]
+
+  # JSON 和 YAML 文件检查
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # JSON 语法检查
+      - id: check-json
+        types: [json]
+      # YAML 语法检查
+      - id: check-yaml
+        types: [yaml]
+      # 检查 JSON 和 YAML 文件末尾是否有换行符
+      - id: end-of-file-fixer
+        types: [json, yaml]
+
+  # JSON 和 YAML 格式化（使用 prettier）
+  # JSON: 与 IDE 内置格式化保持一致
+  # YAML: 与 redhat.vscode-yaml 扩展保持一致
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v4.0.0-alpha.8
+    hooks:
+      - id: prettier
+        types: [json, yaml]
+        args: [--write]
 
   # 本地脚本检查
   - repo: local
@@ -34,7 +71,7 @@ repos:
         types: [markdown]
         pass_filenames: true
         args: []
-      
+
       # Markdown linting（检查格式，不自动修复）
       - id: markdown-lint
         name: Lint Markdown files
@@ -43,12 +80,3 @@ repos:
         types: [markdown]
         pass_filenames: true
         args: [--check]
-
-      # Python 代码语法检查
-      # 确保代码可编译/运行（符合 Git 仓库管理规范）
-      - id: python-check
-        name: Check Python code syntax
-        entry: python -m py_compile
-        language: system
-        types: [python]
-        pass_filenames: true
