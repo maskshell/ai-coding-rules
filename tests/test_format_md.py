@@ -5,7 +5,6 @@
 
 import importlib.util
 import subprocess
-import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
@@ -14,7 +13,6 @@ import pytest
 
 if TYPE_CHECKING:
     from _pytest.capture import CaptureFixture
-    from _pytest.tmpdir import TempPathFactory
 
 # 动态导入 scripts 模块
 scripts_dir = Path(__file__).parent.parent / "scripts"
@@ -312,9 +310,7 @@ class TestMain:
             assert "没有找到 Markdown 文件" in captured.err
 
     @patch("format_md.format_markdown_files")
-    def test_main_handles_markdownlint_not_found(
-        self, mock_format: MagicMock
-    ) -> None:
+    def test_main_handles_markdownlint_not_found(self, mock_format: MagicMock) -> None:
         """测试主函数处理 markdownlint 未找到异常"""
         mock_format.side_effect = MarkdownLintNotFoundError("未找到命令")
 

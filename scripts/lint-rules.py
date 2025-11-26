@@ -17,14 +17,15 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
-try:
-    import yaml
-except ImportError:
-    print("错误: 需要安装 PyYAML 库")
-    print("安装命令: pip install pyyaml 或 uv add pyyaml")
-    sys.exit(1)
+# yaml 模块在当前版本中未使用，但保留导入以便将来扩展
+# 如果需要解析 MDC frontmatter，可以取消注释以下代码
+# try:
+#     import yaml  # noqa: F401
+# except ImportError:
+#     print("错误: 需要安装 PyYAML 库")
+#     print("安装命令: pip install pyyaml 或 uv add pyyaml")
+#     sys.exit(1)
 
 
 # 文件名格式：数字前缀-小写短横线.mdc 或 .md
@@ -47,8 +48,8 @@ class RuleLinter:
     """规则质量验证器"""
 
     def __init__(self):
-        self.errors: List[Dict[str, str]] = []
-        self.warnings: List[Dict[str, str]] = []
+        self.errors: list[dict[str, str]] = []
+        self.warnings: list[dict[str, str]] = []
 
     def check_filename(self, file_path: Path) -> list[dict[str, str]]:
         """
@@ -71,7 +72,10 @@ class RuleLinter:
             errors.append(
                 {
                     "type": "error",
-                    "message": f"文件名格式不符合规范: {filename}。应为 '数字前缀-小写短横线.mdc' 格式",
+                    "message": (
+                        f"文件名格式不符合规范: {filename}。"
+                        "应为 '数字前缀-小写短横线.mdc' 格式"
+                    ),
                 }
             )
 
@@ -96,19 +100,25 @@ class RuleLinter:
                 issues.append(
                     {
                         "type": "error",
-                        "message": f"标题层级过深: {title} (最多允许 {MAX_HEADER_LEVEL} 级)",
+                        "message": (
+                            f"标题层级过深: {title} "
+                            f"(最多允许 {MAX_HEADER_LEVEL} 级)"
+                        ),
                     }
                 )
 
         # 检查标题跳级
         previous_level = 0
-        for level, title in headers:
+        for level, _title in headers:
             current_level = len(level)
             if current_level > previous_level + 1:
                 issues.append(
                     {
                         "type": "error",
-                        "message": f"标题跳级: {'#' * previous_level} → {'#' * current_level} (不允许跳级)",
+                        "message": (
+                            f"标题跳级: {'#' * previous_level} → "
+                            f"{'#' * current_level} (不允许跳级)"
+                        ),
                     }
                 )
             previous_level = current_level
@@ -187,7 +197,10 @@ class RuleLinter:
                 warnings.append(
                     {
                         "type": "warning",
-                        "message": f"精简版文件行数过多 ({line_count} 行)，建议 < {MAX_CONCISE_LINES} 行",
+                        "message": (
+                            f"精简版文件行数过多 ({line_count} 行)，"
+                            f"建议 < {MAX_CONCISE_LINES} 行"
+                        ),
                     }
                 )
 
@@ -305,7 +318,8 @@ def main() -> int:
     parser.add_argument(
         "path",
         type=str,
-        help="要验证的文件或目录路径",
+        nargs="+",
+        help="要验证的文件或目录路径（可多个）",
     )
     parser.add_argument(
         "--check",
@@ -320,80 +334,87 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    path = Path(args.path)
-    if not path.exists():
-        print(f"错误: 路径不存在: {path}", file=sys.stderr)
-        return 1
-
+    # 处理多个路径
+    paths = [Path(p) for p in args.path]
     linter = RuleLinter()
+    all_valid = True
 
-    if path.is_file():
-        # 验证单个文件
-        is_valid, errors, warnings = linter.check_file(path)
-        if args.json:
-            output = {
-                "file": str(path),
-                "valid": is_valid,
-                "errors": errors,
-                "warnings": warnings,
-            }
-            print(json.dumps(output, indent=2, ensure_ascii=False))
-        else:
-            if is_valid:
-                print(f"✓ {path} 验证通过")
-                if warnings:
-                    for warning in warnings:
-                        print(f"  警告: {warning['message']}")
-                return 0
+    for path in paths:
+        if not path.exists():
+            print(f"错误: 路径不存在: {path}", file=sys.stderr)
+            all_valid = False
+            continue
+
+        if path.is_file():
+            # 验证单个文件
+            is_valid, errors, warnings = linter.check_file(path)
+            all_valid = all_valid and is_valid
+
+            if args.json:
+                output = {
+                    "file": str(path),
+                    "valid": is_valid,
+                    "errors": errors,
+                    "warnings": warnings,
+                }
+                print(json.dumps(output, indent=2, ensure_ascii=False))
             else:
-                print(f"✗ {path} 验证失败")
-                for error in errors:
-                    print(f"  错误: {error['message']}")
-                if warnings:
-                    for warning in warnings:
-                        print(f"  警告: {warning['message']}")
-                return 1
-    elif path.is_dir():
-        # 验证目录
-        if args.json:
-            results = []
-            mdc_files = list(path.rglob("*.mdc"))
-            md_files = list(path.rglob("*.md"))
-            all_files = mdc_files + md_files
+                if is_valid:
+                    print(f"✓ {path} 验证通过")
+                    if warnings:
+                        for warning in warnings:
+                            print(f"  警告: {warning['message']}")
+                else:
+                    print(f"✗ {path} 验证失败")
+                    for error in errors:
+                        print(f"  错误: {error['message']}")
+                    if warnings:
+                        for warning in warnings:
+                            print(f"  警告: {warning['message']}")
 
-            for file_path in all_files:
-                if file_path.name == "README.md" or "docs" in file_path.parts:
-                    continue
+        elif path.is_dir():
+            # 验证目录
+            if args.json:
+                results = []
+                mdc_files = list(path.rglob("*.mdc"))
+                md_files = list(path.rglob("*.md"))
+                all_files = mdc_files + md_files
 
-                is_valid, errors, warnings = linter.check_file(file_path)
-                results.append(
-                    {
-                        "file": str(file_path),
-                        "valid": is_valid,
-                        "errors": errors,
-                        "warnings": warnings,
-                    }
-                )
+                for file_path in all_files:
+                    if file_path.name == "README.md" or "docs" in file_path.parts:
+                        continue
 
-            output = {
-                "results": results,
-                "summary": {
-                    "total": len(results),
-                    "passed": sum(1 for r in results if r["valid"]),
-                    "failed": sum(1 for r in results if not r["valid"]),
-                },
-            }
-            print(json.dumps(output, indent=2, ensure_ascii=False))
+                    is_valid, errors, warnings = linter.check_file(file_path)
+                    results.append(
+                        {
+                            "file": str(file_path),
+                            "valid": is_valid,
+                            "errors": errors,
+                            "warnings": warnings,
+                        }
+                    )
+                    all_valid = all_valid and is_valid
+
+                output = {
+                    "results": results,
+                    "summary": {
+                        "total": len(results),
+                        "passed": sum(1 for r in results if r["valid"]),
+                        "failed": sum(1 for r in results if not r["valid"]),
+                    },
+                }
+                print(json.dumps(output, indent=2, ensure_ascii=False))
+            else:
+                print(f"正在验证目录: {path}")
+                pass_count, fail_count = linter.check_directory(path)
+                print(f"\n验证完成: 通过 {pass_count} 个, 失败 {fail_count} 个")
+                all_valid = all_valid and (fail_count == 0)
         else:
-            print(f"正在验证目录: {path}")
-            pass_count, fail_count = linter.check_directory(path)
-            print(f"\n验证完成: 通过 {pass_count} 个, 失败 {fail_count} 个")
-            return 0 if fail_count == 0 else 1
-    else:
-        print(f"错误: 无效的路径类型: {path}", file=sys.stderr)
-        return 1
+            print(f"错误: 无效的路径类型: {path}", file=sys.stderr)
+            all_valid = False
+
+    return 0 if all_valid else 1
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

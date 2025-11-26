@@ -11,7 +11,6 @@ MDC 格式验证脚本
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 try:
     import yaml
@@ -25,10 +24,10 @@ class MDCValidator:
     """MDC 格式验证器"""
 
     def __init__(self):
-        self.errors: List[str] = []
-        self.warnings: List[str] = []
+        self.errors: list[str] = []
+        self.warnings: list[str] = []
 
-    def validate_file(self, file_path: Path) -> Tuple[bool, List[str], List[str]]:
+    def validate_file(self, file_path: Path) -> tuple[bool, list[str], list[str]]:
         """
         验证单个 MDC 文件
 
@@ -124,7 +123,7 @@ class MDCValidator:
         is_valid = len(self.errors) == 0
         return is_valid, self.errors, self.warnings
 
-    def validate_directory(self, directory: Path) -> Tuple[int, int]:
+    def validate_directory(self, directory: Path) -> tuple[int, int]:
         """
         验证目录中的所有 .mdc 文件
 

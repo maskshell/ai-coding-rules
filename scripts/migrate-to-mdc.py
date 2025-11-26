@@ -21,7 +21,6 @@ import argparse
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 try:
     import yaml
@@ -41,7 +40,7 @@ class MDCMigrator:
         self.backup = backup
         self.force = force
 
-    def infer_metadata(self, file_path: Path, content: str) -> Dict[str, any]:
+    def infer_metadata(self, file_path: Path, content: str) -> dict[str, any]:
         """
         根据文件路径和内容推断 frontmatter 元数据
 
@@ -52,7 +51,7 @@ class MDCMigrator:
         Returns:
             frontmatter 字典
         """
-        metadata: Dict[str, any] = {}
+        metadata: dict[str, any] = {}
 
         # 1. 推断 description
         metadata["description"] = self._infer_description(file_path, content)
@@ -91,7 +90,7 @@ class MDCMigrator:
         # 默认描述
         return f"{name} 规则"
 
-    def _infer_globs(self, file_path: Path, content: str) -> List[str]:
+    def _infer_globs(self, file_path: Path, content: str) -> list[str]:
         """推断文件匹配模式"""
         filename = file_path.stem.lower()
 
@@ -141,9 +140,9 @@ class MDCMigrator:
         # 默认：按需应用
         return False
 
-    def _infer_tags(self, file_path: Path, content: str) -> List[str]:
+    def _infer_tags(self, file_path: Path, content: str) -> list[str]:
         """推断标签"""
-        tags: List[str] = []
+        tags: list[str] = []
         filename = file_path.stem.lower()
         content_lower = content.lower()
 
@@ -190,7 +189,7 @@ class MDCMigrator:
     def read_file(self, file_path: Path) -> str:
         """读取文件内容"""
         try:
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 return f.read()
         except Exception as e:
             raise Exception(f"读取文件失败: {file_path}: {e}")
@@ -213,7 +212,7 @@ class MDCMigrator:
             )
         return backup_path
 
-    def convert_to_mdc(self, md_file: Path) -> Tuple[Path, str]:
+    def convert_to_mdc(self, md_file: Path) -> tuple[Path, str]:
         """
         将 .md 文件转换为 .mdc 格式
 
@@ -290,7 +289,7 @@ class MDCMigrator:
             print(f"错误: 转换失败 {md_file}: {e}")
             return False
 
-    def migrate_directory(self, directory: Path) -> Tuple[int, int]:
+    def migrate_directory(self, directory: Path) -> tuple[int, int]:
         """
         迁移目录中的所有 .md 文件
 

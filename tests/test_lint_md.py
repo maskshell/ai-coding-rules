@@ -5,17 +5,14 @@
 
 import importlib.util
 import subprocess
-import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 if TYPE_CHECKING:
     from _pytest.capture import CaptureFixture
-    from _pytest.tmpdir import TempPathFactory
 
 # 动态导入 scripts 模块
 scripts_dir = Path(__file__).parent.parent / "scripts"
@@ -248,9 +245,7 @@ class TestCheckMarkdownlint:
     def test_check_success(self, mock_run: MagicMock, mock_find_cmd: MagicMock) -> None:
         """测试成功检查文件"""
         mock_find_cmd.return_value = "markdownlint"
-        mock_run.return_value = MagicMock(
-            returncode=0, stdout="", stderr=""
-        )
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
         test_file = Path("test.md")
         returncode, output = check_markdownlint([test_file])
@@ -271,7 +266,9 @@ class TestCheckMarkdownlint:
 
     @patch("lint_md.find_markdownlint_command")
     @patch("lint_md.subprocess.run")
-    def test_check_with_errors(self, mock_run: MagicMock, mock_find_cmd: MagicMock) -> None:
+    def test_check_with_errors(
+        self, mock_run: MagicMock, mock_find_cmd: MagicMock
+    ) -> None:
         """测试检查发现错误"""
         mock_find_cmd.return_value = "markdownlint"
         mock_run.return_value = MagicMock(
@@ -443,7 +440,9 @@ class TestLintMarkdownFiles:
 
     @patch("lint_md.check_markdownlint")
     @patch("lint_md.check_project_specific_rules")
-    def test_lint_with_project_errors(self, mock_project: MagicMock, mock_check: MagicMock) -> None:
+    def test_lint_with_project_errors(
+        self, mock_project: MagicMock, mock_check: MagicMock
+    ) -> None:
         """测试项目特定规则错误"""
         mock_check.return_value = (0, "")
         mock_project.return_value = ["文件名格式错误"]

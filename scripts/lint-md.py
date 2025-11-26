@@ -12,7 +12,6 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import List, Tuple
 
 # 常量定义
 MARKDOWN_EXTENSIONS = {".md", ".mdc"}
@@ -75,7 +74,7 @@ def find_markdownlint_command() -> str | None:
     return None
 
 
-def build_markdownlint_command(cmd: str, files: List[Path]) -> List[str]:
+def build_markdownlint_command(cmd: str, files: list[Path]) -> list[str]:
     """
     构建 markdownlint 命令参数
 
@@ -101,7 +100,7 @@ def build_markdownlint_command(cmd: str, files: List[Path]) -> List[str]:
     return cmd_args
 
 
-def check_markdownlint(files: List[Path]) -> Tuple[int, str]:
+def check_markdownlint(files: list[Path]) -> tuple[int, str]:
     """
     使用 markdownlint 检查文件格式
 
@@ -202,7 +201,7 @@ def check_filename_format(file: Path) -> str | None:
     return None
 
 
-def check_header_levels(content: str) -> List[str]:
+def check_header_levels(content: str) -> list[str]:
     """
     检查标题层级（不超过 4 级）
 
@@ -212,7 +211,7 @@ def check_header_levels(content: str) -> List[str]:
     Returns:
         错误信息列表
     """
-    errors: List[str] = []
+    errors: list[str] = []
     headers = HEADER_PATTERN.findall(content)
 
     for header in headers:
@@ -223,7 +222,7 @@ def check_header_levels(content: str) -> List[str]:
     return errors
 
 
-def check_header_skipping(content: str) -> List[str]:
+def check_header_skipping(content: str) -> list[str]:
     """
     检查标题跳级（不允许跳级）
 
@@ -233,7 +232,7 @@ def check_header_skipping(content: str) -> List[str]:
     Returns:
         错误信息列表
     """
-    errors: List[str] = []
+    errors: list[str] = []
     headers = HEADER_PATTERN.findall(content)
     header_levels = [len(h) for h in headers]
 
@@ -250,7 +249,7 @@ def check_header_skipping(content: str) -> List[str]:
     return errors
 
 
-def check_code_block_language_tags(content: str) -> List[str]:
+def check_code_block_language_tags(content: str) -> list[str]:
     """
     检查代码块语言标签
 
@@ -260,7 +259,7 @@ def check_code_block_language_tags(content: str) -> List[str]:
     Returns:
         错误信息列表
     """
-    errors: List[str] = []
+    errors: list[str] = []
     code_blocks = CODE_BLOCK_PATTERN.findall(content)
 
     # 找出缺少语言标签的代码块位置
@@ -274,7 +273,7 @@ def check_code_block_language_tags(content: str) -> List[str]:
     return errors
 
 
-def check_project_specific_rules(file: Path) -> List[str]:
+def check_project_specific_rules(file: Path) -> list[str]:
     """
     检查项目特定规则
 
@@ -284,7 +283,7 @@ def check_project_specific_rules(file: Path) -> List[str]:
     Returns:
         错误信息列表
     """
-    errors: List[str] = []
+    errors: list[str] = []
 
     try:
         content = read_file_content(file)
@@ -308,7 +307,7 @@ def check_project_specific_rules(file: Path) -> List[str]:
     return errors
 
 
-def filter_markdown_files(files: List[Path]) -> List[Path]:
+def filter_markdown_files(files: list[Path]) -> list[Path]:
     """
     过滤出有效的 Markdown 文件
 
@@ -324,7 +323,7 @@ def filter_markdown_files(files: List[Path]) -> List[Path]:
     return markdown_files
 
 
-def lint_markdown_files(files: List[Path], check_only: bool = False) -> int:
+def lint_markdown_files(files: list[Path], check_only: bool = False) -> int:
     """
     检查 Markdown 文件格式
 
@@ -356,7 +355,7 @@ def lint_markdown_files(files: List[Path], check_only: bool = False) -> int:
         print(output)
 
     # 检查项目特定规则
-    project_errors: List[Tuple[Path, List[str]]] = []
+    project_errors: list[tuple[Path, list[str]]] = []
     for file in markdown_files:
         errors = check_project_specific_rules(file)
         if errors:

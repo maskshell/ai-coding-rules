@@ -10,7 +10,6 @@ import argparse
 import subprocess
 import sys
 from pathlib import Path
-from typing import List
 
 # 常量定义
 MARKDOWN_EXTENSIONS = {".md", ".mdc"}
@@ -61,7 +60,9 @@ def find_markdownlint_command() -> str | None:
     return None
 
 
-def build_markdownlint_command(cmd: str, files: List[Path], fix: bool = True) -> List[str]:
+def build_markdownlint_command(
+    cmd: str, files: list[Path], fix: bool = True
+) -> list[str]:
     """
     构建 markdownlint 命令参数
 
@@ -92,7 +93,7 @@ def build_markdownlint_command(cmd: str, files: List[Path], fix: bool = True) ->
     return cmd_args
 
 
-def format_markdown_files(files: List[Path], fix: bool = True) -> int:
+def format_markdown_files(files: list[Path], fix: bool = True) -> int:
     """
     格式化 Markdown 文件
 
@@ -140,7 +141,7 @@ def format_markdown_files(files: List[Path], fix: bool = True) -> int:
         raise MarkdownLintExecutionError(f"执行 markdownlint 时出错: {e}") from e
 
 
-def filter_markdown_files(files: List[Path]) -> List[Path]:
+def filter_markdown_files(files: list[Path]) -> list[Path]:
     """
     过滤出有效的 Markdown 文件
 
@@ -151,9 +152,7 @@ def filter_markdown_files(files: List[Path]) -> List[Path]:
         有效的 Markdown 文件列表
     """
     existing_files = [f for f in files if f.exists()]
-    markdown_files = [
-        f for f in existing_files if f.suffix in MARKDOWN_EXTENSIONS
-    ]
+    markdown_files = [f for f in existing_files if f.suffix in MARKDOWN_EXTENSIONS]
     return markdown_files
 
 
