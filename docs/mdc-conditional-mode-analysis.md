@@ -285,5 +285,5 @@ full-rules/ide-layer/rulesets/01-general.md          (850 tokens)
 ---
 
 **文档维护者**: AI Coding Rules 团队  
-**反馈渠道**: GitHub Issues / Discussions
+**反馈渠道**: [GitHub Issues](https://github.com/maskshell/ai-coding-rules/issues) / [Discussions](https://github.com/maskshell/ai-coding-rules/discussions)
 

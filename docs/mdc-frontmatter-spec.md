@@ -35,11 +35,13 @@ priority: 优先级
 **用途**: 描述规则的用途和适用范围
 
 **要求**:
+
 - 清晰、简洁地描述规则用途
 - 不超过 200 字符
 - 使用中文或英文
 
 **示例**:
+
 ```yaml
 description: "通用编程规范，适用于所有项目和语言"
 description: "Python 基础编码规范，包括命名、类型注解、错误处理"
@@ -51,11 +53,13 @@ description: "React 组件开发规范，包括组件结构、Hooks 使用、状
 **用途**: 定义规则适用的文件模式
 
 **要求**:
+
 - 使用 glob 模式匹配文件路径
 - 支持多个模式（数组）
 - 如果适用于所有文件，使用 `["**/*"]`
 
 **示例**:
+
 ```yaml
 globs: ["**/*"]                    # 所有文件
 globs: ["**/*.py"]                 # 所有 Python 文件
@@ -68,10 +72,12 @@ globs: ["**/components/**/*.tsx"]  # components 目录下的 TSX 文件
 **用途**: 控制规则是否总是应用
 
 **规则类型映射**:
+
 - `alwaysApply: true` → "Always Apply"（应用于每个聊天会话）
 - `alwaysApply: false` → 根据其他条件应用（Apply Intelligently / Apply to Specific Files / Apply Manually）
 
 **示例**:
+
 ```yaml
 alwaysApply: true   # 总是应用（如通用规范）
 alwaysApply: false  # 按需应用（如特定框架规则）
@@ -86,6 +92,7 @@ alwaysApply: false  # 按需应用（如特定框架规则）
 **用途**: 标签分类，便于组织和搜索
 
 **常用标签**:
+
 - `general`: 通用规则
 - `language`: 语言特定（如 `python`, `typescript`, `javascript`）
 - `framework`: 框架特定（如 `react`, `vue`, `fastapi`）
@@ -95,6 +102,7 @@ alwaysApply: false  # 按需应用（如特定框架规则）
 - `style`: 代码风格
 
 **示例**:
+
 ```yaml
 tags: [general, coding-standards]
 tags: [python, type-hints, error-handling]
@@ -108,6 +116,7 @@ tags: [react, hooks, components]
 **格式**: 语义化版本（SemVer）`X.Y.Z`
 
 **示例**:
+
 ```yaml
 version: "1.0.0"
 version: "2.1.3"
@@ -118,6 +127,7 @@ version: "2.1.3"
 **用途**: 规则作者或维护者
 
 **示例**:
+
 ```yaml
 author: "ai-coding-rules-team"
 author: "vibe-coding"
@@ -132,6 +142,7 @@ author: "vibe-coding"
 **默认值**: 50
 
 **示例**:
+
 ```yaml
 priority: 80  # 高优先级（如安全规则）
 priority: 30  # 低优先级（如风格建议）
@@ -277,5 +288,4 @@ version: "1.0.0"
 ---
 
 **文档维护者**: AI Coding Rules 团队  
-**反馈渠道**: GitHub Issues / Discussions
-
+**反馈渠道**: [GitHub Issues](https://github.com/maskshell/ai-coding-rules/issues) / [Discussions](https://github.com/maskshell/ai-coding-rules/discussions)

@@ -30,5 +30,5 @@
 
 ---
 
-[未发布]: https://github.com/your-username/ai-coding-rules/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/your-username/ai-coding-rules/releases/tag/v1.0.0
+[未发布]: https://github.com/maskshell/ai-coding-rules/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/maskshell/ai-coding-rules/releases/tag/v1.0.0

@@ -861,7 +861,7 @@ npm run format        # 格式化所有文件
 
 ## 参考资料
 
-- [本文档的历史讨论记录](https://github.com/your-repo/discussions)
+- [本文档的历史讨论记录](https://github.com/maskshell/ai-coding-rules/discussions)
 - 现有模板参考：
   - [React 模板](../full-rules/project-templates/react-app)
   - [Vue 模板](../full-rules/project-templates/vue-app)

@@ -894,5 +894,5 @@ Markdown 格式验证工具通过系统级 `markdownlint` 命令（通过 Homebr
 ---
 
 **文档维护者**: AI Coding Rules 团队
-**反馈渠道**: GitHub Issues / Discussions
+**反馈渠道**: [GitHub Issues](https://github.com/maskshell/ai-coding-rules/issues) / [Discussions](https://github.com/maskshell/ai-coding-rules/discussions)
 **更新频率**: 每个迭代周期更新

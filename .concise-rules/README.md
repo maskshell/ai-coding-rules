@@ -137,7 +137,7 @@ cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor
 
 如果在使用精简版时有任何问题或建议：
 
-1. 在 GitHub Issues 中反馈
+1. 在 [GitHub Issues](https://github.com/maskshell/ai-coding-rules/issues) 中反馈
 2. 说明使用的场景和遇到的问题
 3. 帮助我们持续改进规则
 
