@@ -2,189 +2,192 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-分层的 AI Rules 配置示例，满足不同层面的 AI 编码助手需求。
+[中文](README.cn.md) | **English**
 
-## 目录结构
+Layered AI Rules configuration examples to meet different levels of AI coding assistant needs.
+
+## Directory Structure
 
 ```text
 ai-coding-rules/
-├── full-rules/                         # 完整版规则（文档和模板）
-│   ├── ide-layer/                      # IDE 层级规则（最通用）
-│   └── project-templates/              # 项目模板
+├── full-rules/                         # Full version rules (documentation and templates)
+│   ├── ide-layer/                      # IDE layer rules (most general)
+│   └── project-templates/              # Project templates
 │       ├── react-app/
 │       ├── vue-app/
 │       ├── python-backend/
 │       └── fullstack-monorepo/
-├── .concise-rules/                     # 精简版规则（推荐日常使用）
-│   ├── ide-layer/                      # IDE 层精简规则
+├── .concise-rules/                     # Concise version rules (recommended for daily use)
+│   ├── ide-layer/                      # IDE layer concise rules
 │   │   ├── 01-general.md
 │   │   └── ...
-│   ├── project-templates/              # 项目层精简规则
+│   ├── project-templates/              # Project layer concise rules
 │   │   ├── react-app/
 │   │   ├── vue-app/
 │   │   ├── python-backend/
 │   │   └── fullstack-monorepo/
-│   └── README.md                       # 精简版使用指南
-├── docs/                               # 指导性文档
+│   └── README.md                       # Concise version usage guide
+├── docs/                               # Guidance documents
 │   ├── rule-writing-guide.md
 │   └── ai-coding-tools.md
 ├── README.md
-├── CONTRIBUTING.md                     # 贡献指南
-├── LICENSE                             # MIT 许可证
-└── CHANGELOG.md                        # 更新日志
+├── CONTRIBUTING.md                     # Contribution guide
+├── LICENSE                             # MIT License
+└── CHANGELOG.md                        # Changelog
 ```
 
-## 双轨制规则
+## Dual-Track Rules System
 
-本项目提供**两套规则系统**，平衡可读性与执行效率：
+This project provides **two rule systems** to balance readability and execution efficiency:
 
-### ⚡ 精简版（.concise-rules/）【推荐日常使用】
+### ⚡ Concise Version (.concise-rules/) 【Recommended for Daily Use】
 
-- **用途**：AI 执行、提高效率、降低成本
-- **特点**：简洁、可操作、token 消耗减少 73%
-- **适用场景**：日常开发、AI 辅助编程
-- **Token 消耗**：~700-1,000 tokens
-- **文件数量**：13 个规则文件
-- **快速开始**：
+- **Purpose**: AI execution, improve efficiency, reduce costs
+- **Features**: Concise, actionable, 73% token reduction
+- **Use Cases**: Daily development, AI-assisted programming
+- **Token Consumption**: ~700-1,000 tokens
+- **File Count**: 13 rule files
+- **Quick Start**:
 
   ```bash
-  # 1. 复制 IDE 层规则到全局配置（适用于所有项目）
+  # 1. Copy IDE layer rules to global configuration (applies to all projects)
   mkdir -p ~/.cursor/rules
   cp .concise-rules/ide-layer/* ~/.cursor/rules/
   
-  # 2. 复制项目模板规则到项目目录（仅适用于当前项目）
-  # 进入你的项目目录后执行：
+  # 2. Copy project template rules to project directory (applies to current project only)
+  # After entering your project directory, execute:
   mkdir -p .cursor/rules
   cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
   ```
 
-### 📦 完整版（full-rules/）
+### 📦 Full Version (full-rules/)
 
-- **用途**：人类阅读、学习理解、团队培训
-- **特点**：详细、全面、包含丰富示例
-- **适用场景**：学习规则设计思路、制定团队规范、深度理解
-- **Token 消耗**：~2,600-3,900 tokens
-- **文件数量**：21 个规则文件，总计 2,998 行
-- **使用指南**：
-  - [IDE层使用说明](./full-rules/ide-layer/README.md)
-  - [规则编写指南](./docs/rule-writing-guide.md)
-  - [AI 编码工具推荐](./docs/ai-coding-tools.md)
+- **Purpose**: Human reading, learning, team training
+- **Features**: Detailed, comprehensive, rich examples
+- **Use Cases**: Learning rule design concepts, team standards, deep understanding
+- **Token Consumption**: ~2,600-3,900 tokens
+- **File Count**: 21 rule files, totaling 2,998 lines
+- **Usage Guide**:
+  - [IDE Layer Usage Guide](./full-rules/ide-layer/README.md)
+  - [Rule Writing Guide](./docs/rule-writing-guide.md)
+  - [AI Coding Tools Recommendation](./docs/ai-coding-tools.md)
 
-**选择建议**：
+**Selection Recommendation**:
 
-- **新用户**：先浏览完整版理解规则设计思路，切换到精简版日常使用
-- **有经验的用户**：直接使用精简版，需要时查阅完整版的特定部分
+- **New Users**: Browse the full version first to understand rule design concepts, then switch to the concise version for daily use
+- **Experienced Users**: Use the concise version directly, refer to specific parts of the full version when needed
 
-## 使用原则
+## Usage Principles
 
-1. **分层管理**：IDE层（通用）→ 语言层 → 框架层 → 项目层（具体）
-2. **优先级**：下层的规则覆盖上层规则
-3. **渐进式**：从预设模板开始，逐步细化
+1. **Layered Management**: IDE layer (general) → Language layer → Framework layer → Project layer (specific)
+2. **Priority**: Lower layer rules override upper layer rules
+3. **Progressive**: Start with preset templates, gradually refine
 
-## 快速开始
+## Quick Start
 
-### 关于 Cursor 规则目录
+### About Cursor Rules Directory
 
-**重要**：Cursor IDE 的官方规则目录是 `~/.cursor/rules/`（全局规则）和 `.cursor/rules/`（项目规则）。
+**Important**: Cursor IDE's official rules directory is `~/.cursor/rules/` (global rules) and `.cursor/rules/` (project rules).
 
-- **全局规则**：`~/.cursor/rules/` - 适用于所有项目
-- **项目规则**：`.cursor/rules/` - 仅适用于当前项目（纳入版本控制）
+- **Global Rules**: `~/.cursor/rules/` - Applies to all projects
+- **Project Rules**: `.cursor/rules/` - Applies only to the current project (version controlled)
 
-### 步骤 1：安装 IDE 层规则
+### Step 1: Install IDE Layer Rules
 
-将 IDE 层规则复制到 Cursor 配置目录：
+Copy IDE layer rules to Cursor configuration directory:
 
 ```bash
-# 使用精简版（推荐）
-# 注意：Cursor IDE 官方规则目录是 ~/.cursor/rules/
+# Use concise version (recommended)
+# Note: Cursor IDE official rules directory is ~/.cursor/rules/
 mkdir -p ~/.cursor/rules
 cp .concise-rules/ide-layer/* ~/.cursor/rules/
 
-# 或使用完整版
+# Or use full version
 cp full-rules/ide-layer/rulesets/* ~/.cursor/rules/
 ```
 
-### 步骤 2：添加项目模板规则
+### Step 2: Add Project Template Rules
 
-根据项目类型，复制对应的模板规则到项目根目录：
+Based on project type, copy corresponding template rules to project root:
 
 ```bash
-# 进入你的项目目录
+# Enter your project directory
 cd /path/to/your/project
 
-# 创建 .cursor/rules 目录（Cursor 官方规则目录）
+# Create .cursor/rules directory (Cursor official rules directory)
 mkdir -p .cursor/rules
 
-# 复制项目模板规则（以 React 为例）
+# Copy project template rules (using React as example)
 cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
 ```
 
-### 步骤 3：自定义项目规则
+### Step 3: Customize Project Rules
 
-在项目的 `.cursor/rules/` 目录中添加项目特定的规则文件。
+Add project-specific rule files in the project's `.cursor/rules/` directory.
 
-**提示**：使用符号链接可以保持规则同步更新：
+**Tip**: Use symbolic links to keep rules synchronized:
 
 ```bash
-# 使用符号链接（推荐）
-# 注意：Cursor IDE 官方规则目录是 ~/.cursor/rules/
+# Use symbolic links (recommended)
+# Note: Cursor IDE official rules directory is ~/.cursor/rules/
 mkdir -p ~/.cursor/rules
 ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 ```
 
-## 详细文档
+## Detailed Documentation
 
-- [IDE层使用说明](./full-rules/ide-layer/README.md)
-- [React应用](./full-rules/project-templates/react-app/docs/coding-standards.md)
-- [Vue应用](./full-rules/project-templates/vue-app/docs/coding-standards.md)
-- [Python后端](./full-rules/project-templates/python-backend/docs/coding-standards.md)
-- [全栈项目](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
-- [规则编写指南（含敏捷和设计模式指导）](./docs/rule-writing-guide.md)
+- [IDE Layer Usage Guide](./full-rules/ide-layer/README.md)
+- [React Application](./full-rules/project-templates/react-app/docs/coding-standards.md)
+- [Vue Application](./full-rules/project-templates/vue-app/docs/coding-standards.md)
+- [Python Backend](./full-rules/project-templates/python-backend/docs/coding-standards.md)
+- [Full-Stack Project](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
+- [Rule Writing Guide (including Agile and Design Patterns)](./docs/rule-writing-guide.md)
 
-## 🔧 工具推荐
+## 🔧 Recommended Tools
 
-为了获得更好的 AI 编码体验，我们推荐使用以下工具：
+For a better AI coding experience, we recommend the following tools:
 
 - **[Context7 MCP Server](https://github.com/upstash/context7)** ⭐⭐⭐⭐⭐
-  - 实时获取最新 API 文档和代码示例
-  - 消除 AI 幻觉，确保代码准确性
-  - 降低代码错误率 55%
-  - **系统要求**: Node.js ≥ v18.0.0
-  - **快速安装**: `npx -y @upstash/context7-mcp --api-key YOUR_API_KEY`
-  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#context7-mcp-server-)
+  - Get latest API documentation and code examples in real-time
+  - Eliminate AI hallucinations, ensure code accuracy
+  - Reduce code error rate by 55%
+  - **System Requirements**: Node.js ≥ v18.0.0
+  - **Quick Install**: `npx -y @upstash/context7-mcp --api-key YOUR_API_KEY`
+  - **Configuration**: [Detailed Configuration Guide](./docs/ai-coding-tools.md#context7-mcp-server-)
 
 - **[ast-grep](https://ast-grep.github.io/)** ⭐⭐⭐⭐☆
-  - 基于 AST 的代码搜索和重构工具
-  - 验证 AI 生成代码的质量
-  - 支持 40+ 种编程语言
-  - **安装**: `npm i -g @ast-grep/cli`
-  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#ast-grep-)
+  - AST-based code search and refactoring tool
+  - Verify quality of AI-generated code
+  - Support for 40+ programming languages
+  - **Install**: `npm i -g @ast-grep/cli`
+  - **Configuration**: [Detailed Configuration Guide](./docs/ai-coding-tools.md#ast-grep-)
 
 - **[Knowledge Graph Memory Server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory)** ⭐⭐⭐⭐☆
-  - 跨会话保持项目上下文
-  - 积累项目知识和经验
-  - 适合长期项目开发
-  - **安装**: `npm install @modelcontextprotocol/server-memory`
-  - **配置**: [详细配置指南](./docs/ai-coding-tools.md#knowledge-graph-memory-server-)
+  - Maintain project context across sessions
+  - Accumulate project knowledge and experience
+  - Suitable for long-term project development
+  - **Install**: `npm install @modelcontextprotocol/server-memory`
+  - **Configuration**: [Detailed Configuration Guide](./docs/ai-coding-tools.md#knowledge-graph-memory-server-)
 
-详细使用指南请参考 [AI 编码工具推荐指南](./docs/ai-coding-tools.md)。
+For detailed usage guide, please refer to [AI Coding Tools Recommendation Guide](./docs/ai-coding-tools.md).
 
-## 如何贡献
+## How to Contribute
 
-如果你想添加新的项目模板或改进现有规则，请参考：
+If you want to add new project templates or improve existing rules, please refer to:
 
-- [贡献指南](./CONTRIBUTING.md) - 了解贡献流程和规范
-- [规则编写指南](./docs/rule-writing-guide.md) - 详细的规则编写说明
+- [Contribution Guide](./CONTRIBUTING.md) - Learn about contribution process and standards
+- [Rule Writing Guide](./docs/rule-writing-guide.md) - Detailed rule writing instructions
 
-规则编写指南包含：
+The rule writing guide includes:
 
-- 规则的分层架构和优先级
-- 文件命名和组织规范
-- 敏捷开发原则的表达方式
-- 软件设计模式的层次区分
-- 创建新模板的完整流程
-- 常见错误及避免方法
+- Rule layered architecture and priority
+- File naming and organization standards
+- Expression of Agile development principles
+- Hierarchy distinction of software design patterns
+- Complete process for creating new templates
+- Common mistakes and how to avoid them
 
-## 许可证
+## License
 
-本项目采用 [MIT License](./LICENSE) 许可证。
+This project is licensed under the [MIT License](./LICENSE).
+
