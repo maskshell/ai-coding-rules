@@ -1,3 +1,15 @@
+---
+description: FastAPI & Pydantic 规范
+globs:
+- '**/*.py'
+alwaysApply: false
+tags:
+- python
+- fastapi
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # FastAPI & Pydantic 规范
 
 ## Pydantic 模型

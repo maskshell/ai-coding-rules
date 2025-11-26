@@ -1,3 +1,16 @@
+---
+description: Vue Composition API 规范
+globs:
+- '**/*.vue'
+alwaysApply: false
+tags:
+- typescript
+- react
+- vue
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Vue Composition API 规范
 
 ## 组合式 API 使用

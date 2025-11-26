@@ -1,3 +1,15 @@
+---
+description: React UI/UX 规范
+globs:
+- '**/*.tsx'
+- '**/*.jsx'
+alwaysApply: false
+tags:
+- react
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # React UI/UX 规范
 
 ## State 管理

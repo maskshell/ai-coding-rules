@@ -1,3 +1,15 @@
+---
+description: Python 编码基础
+globs:
+- '**/*.py'
+alwaysApply: false
+tags:
+- python
+- fastapi
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Python 编码基础
 
 ## 类型注解

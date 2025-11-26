@@ -1,3 +1,16 @@
+---
+description: 全栈项目 AI 规则
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- python
+- typescript
+- fastapi
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # 全栈项目 AI 规则
 
 ## 跨层开发注意

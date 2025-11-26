@@ -1,3 +1,14 @@
+---
+description: 通用编程规范
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # 通用编程规范
 
 ## 基本原则

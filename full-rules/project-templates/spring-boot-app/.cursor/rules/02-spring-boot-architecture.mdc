@@ -1,3 +1,14 @@
+---
+description: Spring Boot 架构设计
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- general
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Spring Boot 架构设计
 
 ## 分层架构

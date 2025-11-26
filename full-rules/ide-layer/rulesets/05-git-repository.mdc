@@ -1,3 +1,14 @@
+---
+description: Git 仓库管理规范
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- general
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # Git 仓库管理规范
 
 ## Commit 时机

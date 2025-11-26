@@ -1,3 +1,15 @@
+---
+description: AI 助手行为偏好
+globs:
+- '**/*'
+alwaysApply: false
+tags:
+- typescript
+- react
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
 # AI 助手行为偏好
 
 ## 代码生成
