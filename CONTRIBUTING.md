@@ -2,6 +2,25 @@
 
 感谢你对 AI Coding Rules 项目的关注！我们欢迎任何形式的贡献。
 
+## 系统要求
+
+### Markdown 格式化工具
+
+本项目使用 `markdownlint` 进行 Markdown 格式化和检查，确保文档格式一致性。
+
+**安装方式（推荐）**：
+- **macOS**: `brew install markdownlint-cli`（官方 Homebrew formula）
+- **其他平台**: `npm install -g markdownlint-cli` 或 `npm install -g markdownlint-cli2`
+
+安装后，可通过以下命令验证：
+```bash
+markdownlint --version
+```
+
+**Python 环境**：
+- Python 3.10 或更高版本
+- 推荐使用 `uv` 进行依赖管理（可选）
+
 ## 贡献流程
 
 ### 1. Fork 项目

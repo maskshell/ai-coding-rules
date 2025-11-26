@@ -48,9 +48,14 @@ ai-coding-rules/
 - **快速开始**：
 
   ```bash
-  # 复制精简版规则到 IDE 配置
-  cp .concise-rules/ide-layer/* ~/.cursor/coderules/ &&
-  cp .concise-rules/project-templates/react-app/* ~/.cursor/coderules/
+  # 1. 复制 IDE 层规则到全局配置（适用于所有项目）
+  mkdir -p ~/.cursor/rules
+  cp .concise-rules/ide-layer/* ~/.cursor/rules/
+  
+  # 2. 复制项目模板规则到项目目录（仅适用于当前项目）
+  # 进入你的项目目录后执行：
+  mkdir -p .cursor/rules
+  cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
   ```
 
 ### 📦 完整版（full-rules/）
@@ -78,16 +83,25 @@ ai-coding-rules/
 
 ## 快速开始
 
+### 关于 Cursor 规则目录
+
+**重要**：Cursor IDE 的官方规则目录是 `~/.cursor/rules/`（全局规则）和 `.cursor/rules/`（项目规则）。
+
+- **全局规则**：`~/.cursor/rules/` - 适用于所有项目
+- **项目规则**：`.cursor/rules/` - 仅适用于当前项目（纳入版本控制）
+
 ### 步骤 1：安装 IDE 层规则
 
 将 IDE 层规则复制到 Cursor 配置目录：
 
 ```bash
 # 使用精简版（推荐）
-cp .concise-rules/ide-layer/* ~/.cursor/coderules/
+# 注意：Cursor IDE 官方规则目录是 ~/.cursor/rules/
+mkdir -p ~/.cursor/rules
+cp .concise-rules/ide-layer/* ~/.cursor/rules/
 
 # 或使用完整版
-cp full-rules/ide-layer/rulesets/* ~/.cursor/coderules/
+cp full-rules/ide-layer/rulesets/* ~/.cursor/rules/
 ```
 
 ### 步骤 2：添加项目模板规则
@@ -98,22 +112,24 @@ cp full-rules/ide-layer/rulesets/* ~/.cursor/coderules/
 # 进入你的项目目录
 cd /path/to/your/project
 
-# 创建 .cursor/coderules 目录
-mkdir -p .cursor/coderules
+# 创建 .cursor/rules 目录（Cursor 官方规则目录）
+mkdir -p .cursor/rules
 
 # 复制项目模板规则（以 React 为例）
-cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/coderules/
+cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
 ```
 
 ### 步骤 3：自定义项目规则
 
-在项目的 `.cursor/coderules/` 目录中添加项目特定的规则文件。
+在项目的 `.cursor/rules/` 目录中添加项目特定的规则文件。
 
 **提示**：使用符号链接可以保持规则同步更新：
 
 ```bash
 # 使用符号链接（推荐）
-ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/coderules/
+# 注意：Cursor IDE 官方规则目录是 ~/.cursor/rules/
+mkdir -p ~/.cursor/rules
+ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 ```
 
 ## 详细文档
