@@ -80,3 +80,12 @@ repos:
         types: [markdown]
         pass_filenames: true
         args: [--check]
+
+      # 规则质量验证（Rule Linter）
+      - id: rule-lint
+        name: Lint rule files
+        entry: python scripts/lint-rules.py
+        language: system
+        types: [markdown]
+        pass_filenames: true
+        args: [--check]
