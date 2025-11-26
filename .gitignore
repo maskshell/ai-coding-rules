@@ -4,6 +4,7 @@
 # IDE files
 .idea/
 .vscode/
+*.code-workspace
 *.swp
 *.swo
 *~
@@ -11,6 +12,7 @@
 # OS files
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 *.log
@@ -22,8 +24,44 @@ yarn-error.log*
 node_modules/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Python testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Pre-commit
+.pre-commit/
+
+# uv
+.uv/
 
 # Context7 MCP Server
 .context7/
 memory.json
 context7.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# Secrets baseline (需要手动生成，但应该提交到仓库)
+# .secrets.baseline
