@@ -92,7 +92,9 @@ class RuleLinter:
             错误和警告列表
         """
         issues = []
-        headers = HEADER_PATTERN.findall(content)
+        # 先移除代码块内容，避免代码块中的 # 被误识别为标题
+        content_without_code = CODE_BLOCK_PATTERN.sub("", content)
+        headers = HEADER_PATTERN.findall(content_without_code)
 
         for level, title in headers:
             level_num = len(level)

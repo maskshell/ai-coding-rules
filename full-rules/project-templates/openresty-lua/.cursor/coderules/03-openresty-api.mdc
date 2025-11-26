@@ -1,0 +1,542 @@
+---
+description: "OpenResty API 设计与网关规范（路由、认证、请求响应、网关能力与测试）"
+globs:
+  - "**/*"
+alwaysApply: false
+tags:
+  - openresty
+  - lua
+  - api
+  - gateway
+version: "1.0.0"
+author: "ai-coding-rules-team"
+---
+
+# OpenResty API 设计与网关规范
+
+## 路由与版本管理
+
+### 路由规则组织
+
+- 使用 `lua/config/routes.lua` 集中管理路由表，避免在 `nginx.conf` 中硬编码大量 location
+- 路由匹配支持前缀匹配、正则匹配、精确匹配，按优先级顺序匹配
+- 路由配置包含：路径模式、目标服务/模块、HTTP 方法限制、是否需要认证
+
+**示例**（路由配置模块）:
+
+```lua
+-- lua/config/routes.lua
+local _M = {}
+
+local routes = {
+    -- 精确匹配优先
+    {
+        path = "/health",
+        method = "GET",
+        handler = "app.health",
+        auth_required = false,
+    },
+    -- 前缀匹配
+    {
+        path = "/api/v1/users",
+        method = {"GET", "POST"},
+        handler = "services.user_service",
+        auth_required = true,
+        upstream = "user-backend",
+    },
+    {
+        path = "/api/v1/orders",
+        method = {"GET", "POST", "PUT"},
+        handler = "services.order_service",
+        auth_required = true,
+        upstream = "order-backend",
+    },
+}
+
+function _M.match(uri, method)
+    -- 先尝试精确匹配
+    for _, route in ipairs(routes) do
+        if route.path == uri then
+            if not route.method or (type(route.method) == "table" and
+                require("app.util").contains(route.method, method)) then
+                return route, nil
+            end
+        end
+    end
+
+    -- 再尝试前缀匹配
+    for _, route in ipairs(routes) do
+        if uri:match("^" .. route.path) then
+            if not route.method or (type(route.method) == "table" and
+                require("app.util").contains(route.method, method)) then
+                return route, nil
+            end
+        end
+    end
+
+    return nil, "route_not_found"
+end
+
+return _M
+```
+
+### API 版本管理
+
+- 使用 URL 路径版本化：`/api/v1/...`、`/api/v2/...`
+- 同一版本内的 API 保持向后兼容，重大变更通过新版本实现
+- 版本信息在路由配置中明确标注，便于后续灰度与下线
+
+**示例**（版本化路由）:
+
+```lua
+-- 在 routes.lua 中
+{
+    path = "/api/v1/users",
+    version = "v1",
+    deprecated = false,  -- 标记即将废弃的版本
+    handler = "services.user_service_v1",
+},
+{
+    path = "/api/v2/users",
+    version = "v2",
+    handler = "services.user_service_v2",
+}
+```
+
+### 灰度与 AB 测试路由
+
+- 支持基于用户 ID、IP、请求头等维度的灰度路由
+- 灰度配置可动态调整（通过共享字典或配置中心），无需重启服务
+
+**示例**（灰度路由）:
+
+```lua
+-- lua/app/router.lua
+local _M = {}
+
+function _M.route_with_canary(route, user_id)
+    -- 检查是否命中灰度
+    local canary_config = require("config.canary").get(route.path)
+    if canary_config and canary_config.enabled then
+        local is_canary = require("app.canary").should_route_to_canary(
+            user_id, canary_config.percentage
+        )
+        if is_canary then
+            route.upstream = canary_config.canary_upstream
+        end
+    end
+
+    return route
+end
+
+return _M
+```
+
+---
+
+## 认证与授权
+
+### 认证处理位置
+
+- 认证逻辑统一放在 `access_by_lua*` 阶段，在路由分发之前执行
+- 支持多种认证方式：JWT、Session、API Key，通过配置或请求头识别认证类型
+- 认证成功后，将用户信息（user_id、roles、permissions）存储到 `ngx.ctx`，供后续阶段使用
+
+**示例**（统一认证模块）:
+
+```lua
+-- lua/app/auth.lua
+local _M = {}
+
+local jwt = require("resty.jwt")
+
+function _M.authenticate()
+    -- 提取 token
+    local token, err = _M.extract_token()
+    if not token then
+        return false, "missing_token", nil
+    end
+
+    -- 验证 token（JWT 示例）
+    local jwt_obj = jwt:verify("your-secret-key", token)
+    if not jwt_obj or not jwt_obj.valid then
+        return false, "invalid_token", nil
+    end
+
+    -- 提取用户信息
+    local user = {
+        user_id = jwt_obj.payload.user_id,
+        roles = jwt_obj.payload.roles or {},
+        permissions = jwt_obj.payload.permissions or {},
+    }
+
+    -- 存储到上下文
+    ngx.ctx.current_user = user
+
+    return true, nil, user
+end
+
+function _M.extract_token()
+    local auth_header = ngx.req.get_headers()["Authorization"]
+    if not auth_header then
+        return nil, "missing header"
+    end
+
+    local m, err = ngx.re.match(auth_header, [[^Bearer\s+(.+)$]], "jo")
+    if not m then
+        return nil, "invalid format"
+    end
+
+    return m[1], nil
+end
+
+return _M
+```
+
+### 授权与权限校验
+
+- 在路由配置中定义所需权限（如 `required_permission = "user:read"`）
+- 在 `access_by_lua*` 或业务模块中校验用户权限，权限不足返回 403
+
+**示例**（权限校验）:
+
+```lua
+-- lua/app/auth.lua
+function _M.check_permission(user, required_permission)
+    if not user or not user.permissions then
+        return false, "unauthorized"
+    end
+
+    -- 检查是否有所需权限
+    for _, perm in ipairs(user.permissions) do
+        if perm == required_permission or perm == "*" then
+            return true, nil
+        end
+    end
+
+    return false, "forbidden"
+end
+
+-- 在 access_by_lua* 中使用
+local route = require("config.routes").match(ngx.var.uri, ngx.req.get_method())
+if route.auth_required then
+    local ok, err, user = require("app.auth").authenticate()
+    if not ok then
+        return ngx.exit(ngx.HTTP_UNAUTHORIZED)
+    end
+
+    if route.required_permission then
+        local has_perm, perm_err = require("app.auth").check_permission(
+            user, route.required_permission
+        )
+        if not has_perm then
+            return ngx.exit(ngx.HTTP_FORBIDDEN)
+        end
+    end
+end
+```
+
+---
+
+## 请求/响应规范
+
+### 统一响应格式
+
+- 成功响应：`{ code: "SUCCESS", message: "ok", data: {...} }`
+- 错误响应：`{ code: "ERROR_CODE", message: "user-friendly message", data: {} }`
+- 分页响应：在 `data` 中包含 `items`、`total`、`page`、`page_size`
+
+**示例**（统一响应处理）:
+
+```lua
+-- lua/app/response.lua
+local _M = {}
+
+local cjson = require("cjson.safe")
+
+function _M.success(data, message)
+    ngx.status = 200
+    ngx.header.content_type = "application/json"
+    ngx.say(cjson.encode({
+        code = "SUCCESS",
+        message = message or "ok",
+        data = data or {}
+    }))
+end
+
+function _M.error(code, message, http_status)
+    http_status = http_status or 500
+    ngx.status = http_status
+    ngx.header.content_type = "application/json"
+    ngx.say(cjson.encode({
+        code = code,
+        message = message,
+        data = {}
+    }))
+    ngx.exit(http_status)
+end
+
+function _M.paginated(items, total, page, page_size)
+    return _M.success({
+        items = items,
+        total = total,
+        page = page,
+        page_size = page_size,
+    })
+end
+
+return _M
+```
+
+### 请求验证
+
+- 使用 Pydantic 风格的验证逻辑（在 Lua 中手动实现或使用轻量验证库）
+- 验证请求参数、请求体格式、必填字段，验证失败返回 400
+
+**示例**（请求验证）:
+
+```lua
+-- lua/app/validator.lua
+local _M = {}
+
+function _M.validate_request_body(schema, body)
+    -- 简单验证示例（实际项目中可使用更完善的验证库）
+    for field, rules in pairs(schema) do
+        local value = body[field]
+        if rules.required and (value == nil or value == "") then
+            return false, "missing_required_field: " .. field
+        end
+        if value and rules.type and type(value) ~= rules.type then
+            return false, "invalid_type_for_field: " .. field
+        end
+    end
+    return true, nil
+end
+
+-- 使用示例
+local schema = {
+    user_id = { required = true, type = "string" },
+    email = { required = true, type = "string" },
+}
+local body = cjson.decode(ngx.req.get_body_data())
+local ok, err = _M.validate_request_body(schema, body)
+if not ok then
+    return require("app.response").error("INVALID_REQUEST", err, 400)
+end
+
+return _M
+```
+
+---
+
+## 网关特有功能
+
+### 限流策略
+
+- 在 `access_by_lua*` 阶段执行限流检查，触发限流返回 429
+- 支持多维度限流：IP、用户 ID、API 路径、组合维度
+- 限流配置可动态调整，无需重启
+
+**示例**（限流集成）:
+
+```lua
+-- 在 access_by_lua* 中
+local rate_limit = require("app.rate_limit")
+local user = ngx.ctx.current_user
+local ip = ngx.var.remote_addr
+
+local ok, err = rate_limit.check(ip, user and user.user_id, ngx.var.uri)
+if not ok then
+    return require("app.response").error("RATE_LIMITED", err, 429)
+end
+```
+
+### 熔断与降级
+
+- 监控下游服务错误率，达到阈值时触发熔断，直接返回降级响应
+- 熔断状态可自动恢复（半开状态探测）或手动恢复
+- 降级策略：返回缓存数据、返回默认值、调用备用服务
+
+**示例**（熔断器实现）:
+
+```lua
+-- lua/app/circuit_breaker.lua
+local _M = {}
+
+local shared_dict = ngx.shared.app_cache
+
+function _M.is_open(service_name)
+    local state = shared_dict:get("circuit:" .. service_name)
+    if state == "open" then
+        return true, nil
+    end
+    return false, nil
+end
+
+function _M.record_failure(service_name)
+    local key = "circuit:" .. service_name .. ":failures"
+    local failures = shared_dict:incr(key, 1, 0, 60)  -- 1 分钟窗口
+    if failures and failures >= 10 then  -- 阈值：10 次失败
+        shared_dict:set("circuit:" .. service_name, "open", 30)  -- 熔断 30 秒
+    end
+end
+
+function _M.record_success(service_name)
+    -- 成功时重置失败计数
+    shared_dict:delete("circuit:" .. service_name .. ":failures")
+end
+
+return _M
+```
+
+### 重试与超时
+
+- 下游服务调用失败时，根据错误类型决定是否重试（如网络错误重试，4xx 不重试）
+- 设置合理的超时时间（连接超时、读取超时），避免长时间等待
+- 重试使用指数退避，避免对下游造成压力
+
+**示例**（重试逻辑）:
+
+```lua
+-- lua/services/base_service.lua
+function _M.call_with_retry(upstream_url, max_retries)
+    max_retries = max_retries or 3
+    local last_err = nil
+
+    for i = 1, max_retries do
+        local httpc = require("resty.http").new()
+        httpc:set_timeout(2000)  -- 2 秒超时
+
+        local res, err = httpc:request_uri(upstream_url)
+        if res and res.status == 200 then
+            return res, nil
+        end
+
+        -- 4xx 错误不重试
+        if res and res.status >= 400 and res.status < 500 then
+            return nil, "client_error"
+        end
+
+        last_err = err
+        -- 指数退避
+        if i < max_retries then
+            ngx.sleep(math.min(0.1 * (2 ^ i), 1.0))
+        end
+    end
+
+    return nil, last_err
+end
+```
+
+---
+
+## 开发流程与测试
+
+### 本地开发验证
+
+- 使用 `openresty` 或 `docker-compose` 搭建本地环境
+- 通过 `curl`、Postman 或 `Test::Nginx` 验证路由、认证、限流等行为
+- 使用 `nginx -t` 检查配置语法，使用 `nginx -s reload` 热重载配置
+
+**示例**（本地测试脚本）:
+
+```bash
+#!/bin/bash
+# scripts/test-local.sh
+
+# 测试健康检查
+curl http://localhost:8080/health
+
+# 测试认证
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/v1/users
+
+# 测试限流（快速请求）
+for i in {1..20}; do
+    curl http://localhost:8080/api/v1/users
+done
+```
+
+### 单元测试
+
+- 使用 `busted` 编写 Lua 模块的单元测试
+- 测试核心逻辑：认证、限流、路由匹配、响应格式化
+
+**示例**（busted 测试）:
+
+```lua
+-- tests/lua/app/auth_test.lua
+describe("auth module", function()
+    it("should extract token from Authorization header", function()
+        local auth = require("app.auth")
+        -- Mock ngx.req.get_headers
+        -- ...
+        local token, err = auth.extract_token()
+        assert.is_not_nil(token)
+    end)
+end)
+```
+
+### 集成测试
+
+- 使用 `Test::Nginx` 编写端到端测试，验证完整的请求-响应流程
+- 测试场景：正常请求、认证失败、限流触发、下游服务错误、熔断触发
+
+**示例**（Test::Nginx 配置）:
+
+```perl
+# tests/nginx/api_test.t
+use Test::Nginx::Socket 'no_plan';
+
+run_tests();
+
+__DATA__
+
+=== TEST 1: 正常请求
+--- config
+location /test {
+    access_by_lua_block {
+        require("app.auth").authenticate()
+    }
+    content_by_lua_block {
+        ngx.say("ok")
+    }
+}
+--- request
+GET /test
+--- more_headers
+Authorization: Bearer valid_token
+--- response_body
+ok
+--- error_code: 200
+```
+
+### 测试原则
+
+- **先写测试再实现功能**（TDD）：对于关键路径（认证、限流），先写测试用例，再实现功能
+- **测试覆盖核心逻辑**：认证、路由、限流、错误处理必须覆盖
+- **集成测试优先**：优先保证端到端流程正确，再补充单元测试覆盖边界情况
+- **持续验证**：每次修改后运行测试，确保不破坏现有功能
+
+---
+
+## 开发流程（API 开发）
+
+### API 开发步骤
+
+1. **设计 API 接口**：定义端点、请求/响应格式、状态码、错误码
+2. **实现路由配置**：在 `routes.lua` 中添加路由规则，配置认证与权限要求
+3. **实现认证与授权**：在 `access_by_lua*` 中集成认证模块，校验用户权限
+4. **实现业务逻辑**：在 `services/` 中封装对下游服务的调用，处理业务数据
+5. **添加请求验证**：验证请求参数与请求体，返回清晰的错误提示
+6. **集成网关能力**：添加限流、熔断、重试、降级等网关能力
+7. **编写测试**：使用 `Test::Nginx` 编写集成测试，使用 `busted` 编写单元测试
+8. **本地验证**：在本地环境验证完整流程，确保符合预期
+9. **性能与稳定性优化**：分析延迟与错误率，优化热点路径，完善错误处理
+
+### API 开发原则
+
+- **API 优先设计**：先定义清晰的 API 接口，再实现具体逻辑
+- **统一响应格式**：所有 API 使用统一的成功/错误响应格式，便于前端处理
+- **错误处理完善**：每个可能的错误场景都有明确的错误码与提示
+- **网关能力复用**：限流、熔断、重试等能力通过模块复用，避免重复实现
+- **测试驱动开发**：关键路径先写测试，再实现功能，确保质量

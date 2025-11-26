@@ -1,0 +1,326 @@
+---
+description: "OpenResty + Lua 项目基础开发规范（目录结构、编码风格、生命周期与基础流程）"
+globs:
+  - "**/*"
+alwaysApply: false
+tags:
+  - openresty
+  - lua
+  - backend
+  - api-gateway
+version: "1.0.0"
+author: "ai-coding-rules-team"
+---
+
+# OpenResty Lua 开发规范（基础）
+
+## 技术栈与典型场景
+
+### OpenResty 技术栈
+
+- 使用 **OpenResty + Nginx + LuaJIT** 作为网关与边车服务的统一技术栈
+- 主要依赖生态：
+  - `ngx_lua` / `lua-nginx-module`：在 Nginx 阶段运行 Lua 代码
+  - `lua-resty-*` 系列库：如 `lua-resty-http`、`lua-resty-redis`、`lua-resty-limit-traffic` 等
+  - JSON 编码/解码库：如 `cjson`（优先使用 `cjson.safe`）
+  - 单元测试/集成测试：如 `busted`、`Test::Nginx`
+
+**示例**（典型依赖声明片段，仅示意）:
+
+```text
+lua_package_path "/path/to/project/lua/?.lua;;";
+lua_package_cpath "/path/to/project/lualib/?.so;;";
+```
+
+### 适用场景
+
+- **API 网关**：路由转发、统一认证鉴权、限流、灰度发布
+- **边车/适配层**：协议转换（HTTP ↔ gRPC）、统一日志与指标收集
+- **轻量业务 API**：在 OpenResty 中直接实现部分业务逻辑（但避免复杂业务完全堆在网关层）
+
+**原则**：
+
+- 网关层 **聚焦横切能力**（认证、限流、日志、观测），避免深度业务逻辑
+- 复杂业务逻辑建议下沉到后端服务（如 Java、Go、Python 等），OpenResty 仅作为入口与编排层
+
+---
+
+## 项目结构约定
+
+### 推荐目录结构
+
+- 将 Nginx 配置、Lua 代码、脚本与工具分层组织，避免所有内容混在 `nginx.conf` 中
+- 在仓库根目录中保持清晰的 `conf/` 与 `lua/` 分离
+
+```text
+openresty-project/
+├── conf/
+│   ├── nginx.conf              # 主配置，按 include 引入子配置
+│   ├── routes.conf             # 路由与 location 配置
+│   └── upstreams.conf          # 上游服务与负载均衡配置
+├── lua/
+│   ├── app/
+│   │   ├── init.lua            # 项目初始化逻辑（配置加载、依赖校验）
+│   │   ├── router.lua          # 路由分发逻辑（基于 URI 或自定义规则）
+│   │   ├── auth.lua            # 认证与授权模块
+│   │   ├── rate_limit.lua      # 限流模块
+│   │   ├── log.lua             # 日志与 trace 处理
+│   │   └── util/               # 工具函数（JSON、字符串、表操作等）
+│   ├── services/
+│   │   ├── user_service.lua     # 业务服务封装（调用后端微服务）
+│   │   └── order_service.lua
+│   └── config/
+│       ├── env.lua             # 环境配置加载（dev/stage/prod）
+│       └── routes.lua          # 路由与后端映射表
+├── scripts/
+│   ├── dev-start.sh            # 本地开发启动脚本
+│   └── run-tests.sh            # 测试执行脚本（busted / Test::Nginx）
+└── tests/
+    ├── nginx/                  # Test::Nginx 配置与用例
+    └── lua/                    # Lua 层面的单元测试
+```
+
+**示例**（在 `nginx.conf` 中引入项目配置）:
+
+```nginx
+http {
+    lua_package_path "/path/to/openresty-project/lua/?.lua;;";
+
+    init_by_lua_block {
+        require("app.init").init()
+    }
+
+    init_worker_by_lua_block {
+        require("app.init").init_worker()
+    }
+
+    include conf/routes.conf;
+    include conf/upstreams.conf;
+}
+```
+
+---
+
+## Lua 编码规范
+
+### 模块与命名约定
+
+- 模块文件命名：**小写下划线或短横线**，与职责一致（如 `auth.lua`、`rate_limit.lua`）
+- 模块返回值：统一返回 **表**，避免直接返回函数
+- 函数命名：使用 **小写下划线**（例如 `verify_token`、`build_upstream_url`）
+- 变量命名：
+  - 局部变量：`local` 开头，语义清晰（`local user_id`、`local req_body`）
+  - 常量（约定常量）使用大写下划线（`LOCALHOST = "127.0.0.1"`）
+
+**示例**（模块定义与导出）:
+
+```lua
+-- lua/app/auth.lua
+local _M = {}
+
+local ngx = ngx
+local cjson = require("cjson.safe")
+
+function _M.extract_token()
+    local auth_header = ngx.req.get_headers()["Authorization"]
+    if not auth_header then
+        return nil, "missing Authorization header"
+    end
+
+    local m, err = ngx.re.match(auth_header, [[^Bearer\s+(.+)$]], "jo")
+    if not m then
+        return nil, "invalid Authorization header"
+    end
+
+    return m[1], nil
+end
+
+function _M.verify_token(token)
+    -- TODO: 调用下游认证服务或本地校验逻辑
+    return true, { user_id = "123", roles = { "admin" } }
+end
+
+return _M
+```
+
+### 局部变量与全局污染
+
+- **始终优先使用 `local`**，避免创建隐式全局变量
+- 常用模块（`ngx`、`cjson` 等）在模块顶部缓存到 `local`，避免多次全局查找
+
+**示例**:
+
+```lua
+-- Good: 使用 local，减少全局查找
+local ngx = ngx
+local shared_dict = ngx.shared.app_cache
+
+local function get_from_cache(key)
+    return shared_dict:get(key)
+end
+
+-- Bad: 未显式声明，污染全局作用域
+function get_from_cache_bad(key)
+    return ngx.shared.app_cache:get(key)
+end
+```
+
+### 错误处理与返回约定
+
+- 函数返回值约定：**`result, err`** 或 **`ok, err_or_data`**，避免通过抛异常方式控制正常流程
+- 对外暴露 API 时，尽量不返回原始底层错误消息，进行适度封装
+
+**示例**:
+
+```lua
+local _M = {}
+
+function _M.load_user(user_id)
+    if not user_id then
+        return nil, "user_id is required"
+    end
+
+    local user, db_err = dao.get_user(user_id)
+    if db_err then
+        -- 日志中记录详细错误，对外返回通用错误
+        ngx.log(ngx.ERR, "failed to load user: ", db_err)
+        return nil, "internal_error"
+    end
+
+    return user, nil
+end
+
+return _M
+```
+
+---
+
+## OpenResty 生命周期与上下文
+
+### 各阶段职责划分
+
+- `init_by_lua*`：
+  - 加载配置（环境变量、静态配置）
+  - 初始化只需执行一次的全局结构（如路由表、只读配置表）
+  - 禁止执行阻塞 I/O（包括网络请求、磁盘长时间操作）
+- `init_worker_by_lua*`：
+  - 启动定时任务（`ngx.timer.at`），如下游健康检查、周期性同步配置
+  - 初始化与 worker 相关的资源
+- `access_by_lua*`：
+  - 认证鉴权、限流、灰度、路由决策
+  - 尽量只做轻量逻辑，将重逻辑交给后端服务
+- `content_by_lua*`：
+  - 返回业务内容或调用后端服务并转发响应
+  - 适合实现轻量 API 或 mock 服务
+- `log_by_lua*`：
+  - 统一日志、trace-id 处理、指标上报
+  - 避免在此阶段做耗时计算或网络调用（如需上报，优先异步批量）
+
+**示例**（典型 `server` 配置）:
+
+```nginx
+server {
+    listen 80;
+    server_name api.example.com;
+
+    location / {
+        access_by_lua_block {
+            local auth = require("app.auth")
+            local token, err = auth.extract_token()
+            if not token then
+                return ngx.exit(ngx.HTTP_UNAUTHORIZED)
+            end
+
+            local ok, user = auth.verify_token(token)
+            if not ok then
+                return ngx.exit(ngx.HTTP_FORBIDDEN)
+            end
+
+            ngx.ctx.current_user = user
+        }
+
+        content_by_lua_block {
+            require("app.router").route()
+        }
+
+        log_by_lua_block {
+            require("app.log").write_access_log()
+        }
+    }
+}
+```
+
+### 共享内存与缓存使用
+
+- 使用 `lua_shared_dict` 管理进程间共享缓存，如配置、限流计数等
+- 约定共享字典命名与用途（例如 `app_cache` 用于配置与元数据、`rate_limit` 用于限流计数）
+
+**示例**:
+
+```nginx
+lua_shared_dict app_cache 10m;
+lua_shared_dict rate_limit 2m;
+```
+
+```lua
+-- lua/app/rate_limit.lua
+local _M = {}
+
+local ngx = ngx
+local limit_dict = ngx.shared.rate_limit
+
+function _M.is_allowed(key, limit, window)
+    local current, err = limit_dict:incr(key, 1, 0, window)
+    if not current then
+        ngx.log(ngx.ERR, "failed to incr rate limit: ", err)
+        return false, "internal_error"
+    end
+
+    if current > limit then
+        return false, "rate_limited"
+    end
+
+    return true, nil
+end
+
+return _M
+```
+
+---
+
+## 开发流程（敏捷实践）
+
+### 开发步骤
+
+1. **先实现基础路由与入口结构**  
+   - 配置 `nginx.conf` 与 `routes.conf`，确保请求能到达 `content_by_lua*`
+   - 使用简单的 `hello world` Lua 模块验证路径与加载
+
+2. **引入配置与环境管理**  
+   - 实现 `lua/config/env.lua`，区分 dev/stage/prod
+   - 将硬编码常量迁移到配置模块中，避免散落在代码里
+
+3. **抽取横切能力模块**  
+   - 将认证、限流、日志分别抽出到 `app/auth.lua`、`app/rate_limit.lua`、`app/log.lua`
+   - 在 `access_by_lua*` 与 `log_by_lua*` 中只做**模块调用与编排**
+
+4. **封装后端服务访问与业务模块**  
+   - 在 `lua/services/` 中封装对后端服务（HTTP/gRPC）的访问逻辑
+   - 在 `app/router.lua` 中根据路由选择对应 service 调用
+
+5. **添加测试与本地验证**  
+   - 使用 `Test::Nginx` 或类似工具编写关键路径用例（如鉴权失败、限流触发）
+   - 编写 Lua 单元测试验证核心模块（如 `auth.extract_token`、`rate_limit.is_allowed`）
+
+6. **性能与稳健性优化**  
+   - 分析 QPS、延迟、错误率与缓存命中率
+   - 避免在热路径中执行阻塞 I/O，必要时采用异步/批量方式
+   - 通过重构优化模块边界和依赖关系，提升可读性与可测试性
+
+### 功能开发原则
+
+- 优先实现 **MVP 能跑通的请求路径**，再增加认证、限流、监控等增强能力
+- 每次改动后，至少通过本地 curl / Postman / `Test::Nginx` 验证关键路径
+- 保持 Lua 模块的独立性与单一职责，方便重用与测试
+- 通过持续重构改善代码质量，而不是一次性"完美设计"
+- 提交粒度小：按「配置变更」「模块新增」「行为调整」划分 commit，而不是一次性大提交

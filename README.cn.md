@@ -157,15 +157,7 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 当你希望基于现有元规则生成新的规则文件（例如为某个框架或工具新增一套规范），只需要告诉 AI「目标」和「应遵守哪些规则文件」，无需在提示词中重复具体格式细节。
 
 ```text
-你是本仓库的规则协作者，请严格遵守
-`.cursor/rules/meta-rules.mdc` 中的元规则，
-以及 `full-rules/ide-layer/rulesets/` 的风格，
-为「{技术栈/场景名}」生成一套新的规则（包含完整版和精简版）。
-
-要求：
-- 使用与现有规则一致的 MDC 格式和结构
-- 文件命名、frontmatter、目录层级、精简版转换等细节都按 meta-rules 执行
-- 先给出目录大纲，再补全各小节内容
+请严格遵守 `.cursor/rules/meta-rules.mdc` 中的元规则，为「{技术栈/场景名}」生成一套新的规则。
 ```
 
 ## 🔧 工具推荐

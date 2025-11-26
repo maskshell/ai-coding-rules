@@ -1,0 +1,137 @@
+---
+description: "OpenResty Lua 架构设计模式、配置管理、性能优化与观测性规范（精简版）"
+globs:
+  - "**/*"
+alwaysApply: false
+tags:
+  - openresty
+  - lua
+  - architecture
+  - performance
+version: "1.0.0"
+author: "ai-coding-rules-team"
+---
+
+# OpenResty Lua 架构与设计模式（精简版）
+
+## 分层架构
+
+### 层次划分
+
+- 配置层（`config/`）→ 网关能力层（`app/`）→ 业务服务层（`services/`）→ 适配层
+- 下层不依赖上层，上层可调用下层
+- 网关能力与业务服务保持清晰边界，避免相互依赖
+
+---
+
+## 配置与环境管理
+
+### 环境配置
+
+- 使用 `config/env.lua` 统一加载环境变量，区分 dev/stage/prod
+- 敏感信息通过环境变量注入，不硬编码
+- 静态配置在 `init_by_lua*` 加载到共享字典，支持热更新
+
+---
+
+## 典型设计模式
+
+### 缓存模式
+
+- 共享字典：配置、元数据、限流计数（进程间共享）
+- LRU 缓存：用户会话、临时计算结果（本地，`lua-resty-lrucache`）
+- 多级缓存：本地 LRU → 共享字典 → Redis → 后端，按命中率选择层级
+
+**示例**:
+
+```lua
+-- 多级缓存示例
+local cache = lrucache.new(1000)
+local shared_dict = ngx.shared.app_cache
+
+function get_user(user_id)
+    local user = cache:get(user_id)  -- 第一级：本地 LRU
+    if user then return user end
+
+    user = shared_dict:get("user:" .. user_id)  -- 第二级：共享字典
+    if user then
+        cache:set(user_id, user)
+        return user
+    end
+
+    -- 第三级：调用后端
+    return fetch_from_backend(user_id)
+end
+```
+
+### 限流模式
+
+- 使用 `lua-resty-limit-traffic` 实现令牌桶/漏桶
+- 多维度限流：按 IP、用户 ID、API 路径分别限流
+- 共享字典 + `incr` 实现简单滑动窗口限流
+
+### 日志与 Trace
+
+- 在 `log_by_lua*` 统一收集访问日志、错误日志、指标
+- 使用 `trace-id` 贯穿请求链路，便于分布式追踪
+- 日志格式统一（JSON），便于解析与聚合
+
+---
+
+## 性能与内存管理
+
+### 避免阻塞 I/O
+
+- 请求处理阶段禁止阻塞 I/O，使用 `lua-resty-*` 非阻塞库
+- 耗时操作使用 `ngx.timer.at` 异步执行
+
+### 减少临时对象
+
+- 热路径避免频繁创建表、字符串拼接
+- 复用连接对象（HTTP/Redis client），使用连接池
+- 使用 `table.new()` 预分配表大小（LuaJIT）
+
+### 共享字典容量
+
+- 根据实际数据量设置大小，避免过大或过小
+- 监控使用率，及时告警
+
+---
+
+## 错误处理与观测性
+
+### 错误码约定
+
+- 统一错误码体系（`INVALID_TOKEN`、`RATE_LIMITED`、`UPSTREAM_ERROR`）
+- 错误响应格式：`{ code, message, data }`
+
+### 监控指标
+
+- 关键路径埋点：QPS、延迟（P50/P95/P99）、错误率、缓存命中率
+- 使用 Prometheus 格式或批量上报到监控系统
+
+### 分布式追踪
+
+- 支持 OpenTracing / OpenTelemetry，传播 `trace-id`、`span-id`
+- 调用下游服务时注入 trace 信息到请求头
+
+---
+
+## 开发流程（架构演进）
+
+### 架构设计步骤
+
+1. **明确分层边界**：定义配置/网关/业务层的职责与接口
+2. **实现配置与路由**：建立环境配置与路由表
+3. **抽取横切能力**：将认证/限流/日志抽到独立模块
+4. **封装服务调用**：统一封装下游访问，包括重试/熔断/降级
+5. **引入缓存与优化**：按需引入多级缓存与连接池
+6. **完善观测性**：添加日志/指标/追踪
+7. **持续重构**：根据使用情况调整模块边界
+
+### 原则
+
+- 渐进式演进：从简单结构开始，按需引入复杂度
+- 关注点分离：配置/网关/业务/观测性各自独立
+- 可测试性优先：模块设计考虑单测与集成测试
+- 性能与可维护性平衡：优先保证清晰，在瓶颈处再优化

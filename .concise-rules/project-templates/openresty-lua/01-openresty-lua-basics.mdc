@@ -1,0 +1,113 @@
+---
+description: "OpenResty + Lua 项目基础开发规范（精简版）"
+globs:
+  - "**/*"
+alwaysApply: false
+tags:
+  - openresty
+  - lua
+  - backend
+  - api-gateway
+version: "1.0.0"
+author: "ai-coding-rules-team"
+---
+
+# OpenResty Lua 开发规范（基础，精简版）
+
+## 技术栈与场景
+
+### 技术栈
+
+- 使用 OpenResty + LuaJIT 构建 API 网关 / 边车
+- 优先使用稳定的 `lua-resty-*` 库（http/redis/limit-traffic 等）
+- JSON 处理推荐 `cjson.safe`
+
+### 场景
+
+- 网关层：路由、认证鉴权、限流、灰度、统一日志与监控
+- 轻量业务 API：仅实现简单逻辑，复杂业务下沉到后端服务
+
+---
+
+## 项目结构
+
+### 目录约定
+
+- `conf/`：Nginx/OpenResty 配置（按模块拆分 routes / upstreams）
+- `lua/app/`：网关核心模块（init/router/auth/rate_limit/log/util）
+- `lua/services/`：下游服务访问与业务封装
+- `lua/config/`：环境与路由配置
+- `scripts/`、`tests/`：运维脚本与测试
+
+### 关键约束
+
+- 不在 `nginx.conf` 里堆大量 Lua 逻辑，统一抽到 `lua/` 模块
+- 每个模块单一职责：认证、限流、日志等不要混在一个文件
+
+---
+
+## Lua 编码规范
+
+### 命名与模块
+
+- 模块文件名：小写（`auth.lua`、`rate_limit.lua`）
+- 模块导出：返回表 `_M = {}`，不将函数直接暴露为模块本身
+- 函数命名：小写下划线（`verify_token`、`extract_token`）
+
+**示例**:
+
+```lua
+-- Good
+local _M = {}
+local ngx = ngx
+
+function _M.extract_token()
+    -- ...
+end
+
+return _M
+```
+
+### 局部变量与返回约定
+
+- 尽量使用 `local`，禁止隐式全局变量
+- 常用全局（`ngx`、`cjson`）在顶部缓存为 `local`
+- 函数返回 `(result, err)` 或 `(ok, data_or_err)`，不通过异常驱动正常流程
+
+---
+
+## 生命周期与上下文
+
+### 各阶段职责
+
+- `init_by_lua*`：加载只读配置、初始化全局结构，禁止阻塞 I/O
+- `init_worker_by_lua*`：启动定时任务、worker 级初始化
+- `access_by_lua*`：认证、限流、灰度、路由决策，仅做编排不写复杂业务
+- `content_by_lua*`：调用后端或实现轻量 API
+- `log_by_lua*`：访问日志、trace-id、指标采集，避免重逻辑和重 I/O
+
+### 共享字典与缓存
+
+- `lua_shared_dict` 用于配置缓存、限流计数等
+- 为每个共享字典定义清晰用途与容量（如 `app_cache`、`rate_limit`）
+- 写缓存逻辑时必须考虑失败与降级（写失败不能影响主流程）
+
+---
+
+## 开发流程（敏捷）
+
+### 开发步骤
+
+1. **打通基础请求路径**：配置 routes + 简单 `content_by_lua*` 返回，确保请求能到 Lua
+2. **引入配置模块**：实现 `config/env.lua`，去除硬编码环境差异
+3. **抽取横切模块**：将认证/限流/日志从 location 中抽到 `app/*.lua`
+4. **封装后端服务调用**：在 `services/` 中统一处理 HTTP/gRPC 调用与重试
+5. **补充测试与验证**：用 `Test::Nginx` + Lua 单测覆盖关键路径
+6. **优化性能与重构**：在高 QPS 路径上减少阻塞 I/O、创建对象和全局查找
+
+### 原则
+
+- 先让流量打通，再逐步加上认证、限流、监控
+- 所有复杂逻辑优先进入模块，而不是散落在 `nginx.conf`
+- 修改后必须在本地/测试环境做最小验证（至少几条关键用例）
+- 持续整理模块边界，避免「上帝模块」和「巨大脚本」

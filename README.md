@@ -157,16 +157,7 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 When you want to generate a new rule set (for a specific framework, tool, or workflow), you only need to describe the **goal** and tell the AI which rule files to follow. The implementation details (MDC structure, frontmatter, full vs concise, etc.) are already defined in the meta-rules.
 
 ```text
-Act as a collaborator on this repository. Following the meta-rules in
-`.cursor/rules/meta-rules.mdc` and the style of `full-rules/ide-layer/rulesets/`,
-create a new rule set for “{tech stack / scenario}” (including both full and
-concise variants).
-
-Requirements:
-- Use the same MDC format and structure as existing rules
-- Obey all naming, frontmatter, and concise-conversion principles defined
-  in the meta-rules
-- First propose a heading outline, then complete each section
+Strictly follow the meta-rules in `.cursor/rules/meta-rules.mdc` to generate a new rule set for "{tech stack / scenario}".
 ```
 
 ## 🔧 Recommended Tools

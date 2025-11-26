@@ -1,0 +1,507 @@
+---
+description: "OpenResty Lua 架构设计模式、配置管理、性能优化与观测性规范"
+globs:
+  - "**/*"
+alwaysApply: false
+tags:
+  - openresty
+  - lua
+  - architecture
+  - performance
+version: "1.0.0"
+author: "ai-coding-rules-team"
+---
+
+# OpenResty Lua 架构与设计模式
+
+## 分层架构
+
+### 架构层次划分
+
+将 OpenResty 项目视为一个**分层系统**，从下到上依次为：
+
+1. **Nginx/OpenResty 框架层**：提供 HTTP 处理、连接管理、阶段钩子
+2. **配置层**：环境配置、路由表、上游服务映射（`lua/config/`）
+3. **网关能力层**：认证、限流、日志、监控（`lua/app/`）
+4. **业务服务层**：封装对下游服务的调用与编排（`lua/services/`）
+5. **适配/协议转换层**：协议转换、数据格式统一（如 HTTP ↔ gRPC、JSON ↔ Protobuf）
+
+**原则**：
+
+- 下层不依赖上层，上层可调用下层
+- 网关能力层（`app/`）与业务服务层（`services/`）保持清晰边界，避免相互依赖
+- 配置层独立，可被任意层读取，但不被业务逻辑直接修改
+
+**示例**（模块依赖关系示意）:
+
+```lua
+-- lua/app/router.lua（网关能力层）
+local config = require("config.routes")  -- 依赖配置层
+local user_service = require("services.user_service")  -- 依赖业务服务层
+
+local _M = {}
+
+function _M.route()
+    local route = config.match(ngx.var.uri)
+    if route.service == "user" then
+        return user_service.handle_request(ngx.ctx.current_user)
+    end
+end
+
+return _M
+```
+
+---
+
+## 配置与环境管理
+
+### 环境配置分离
+
+- 使用 `lua/config/env.lua` 统一加载环境变量与静态配置
+- 区分 `dev`、`stage`、`prod` 环境，避免在代码中硬编码环境差异
+- 敏感信息（密钥、数据库连接串）通过环境变量注入，不提交到代码仓库
+
+**示例**（环境配置模块）:
+
+```lua
+-- lua/config/env.lua
+local _M = {}
+
+local env = os.getenv("APP_ENV") or "dev"
+
+local configs = {
+    dev = {
+        upstream_timeout = 5,
+        rate_limit_enabled = false,
+        log_level = "debug",
+    },
+    stage = {
+        upstream_timeout = 3,
+        rate_limit_enabled = true,
+        log_level = "info",
+    },
+    prod = {
+        upstream_timeout = 2,
+        rate_limit_enabled = true,
+        log_level = "warn",
+    }
+}
+
+function _M.get(key)
+    local env_config = configs[env]
+    if not env_config then
+        ngx.log(ngx.ERR, "unknown env: ", env)
+        return nil
+    end
+    return env_config[key]
+end
+
+function _M.get_env()
+    return env
+end
+
+return _M
+```
+
+### 配置热更新与共享字典
+
+- 静态配置（如路由表、上游映射）在 `init_by_lua*` 加载到共享字典，支持热更新
+- 动态配置（如限流阈值、开关）通过共享字典 + 定时任务同步，避免每次请求都读取外部配置源
+
+**示例**（配置热更新模式）:
+
+```lua
+-- lua/app/config_loader.lua
+local _M = {}
+
+local ngx = ngx
+local config_dict = ngx.shared.app_cache
+local cjson = require("cjson.safe")
+
+function _M.load_routes()
+    -- 从文件或外部配置中心加载路由表
+    local routes = {
+        { path = "/api/v1/users", service = "user", upstream = "user-backend" },
+        { path = "/api/v1/orders", service = "order", upstream = "order-backend" },
+    }
+
+    -- 存储到共享字典
+    local ok, err = config_dict:set("routes", cjson.encode(routes))
+    if not ok then
+        ngx.log(ngx.ERR, "failed to update routes: ", err)
+    end
+end
+
+function _M.get_routes()
+    local routes_json = config_dict:get("routes")
+    if not routes_json then
+        return nil, "routes not loaded"
+    end
+    return cjson.decode(routes_json), nil
+end
+
+return _M
+```
+
+---
+
+## 典型设计模式
+
+### 缓存模式
+
+- **共享字典缓存**：用于配置、元数据、限流计数等，进程间共享，适合高频读取
+- **LRU 缓存**：使用 `lua-resty-lrucache` 实现本地 LRU，适合缓存用户会话、临时计算结果
+- **多级缓存**：本地 LRU → 共享字典 → Redis → 后端服务，按命中率与延迟需求选择层级
+
+**示例**（多级缓存实现）:
+
+```lua
+-- lua/app/cache.lua
+local lrucache = require("resty.lrucache")
+local http = require("resty.http")
+
+local _M = {}
+local cache, err = lrucache.new(1000)  -- 本地 LRU，最多 1000 项
+if not cache then
+    ngx.log(ngx.ERR, "failed to create lrucache: ", err)
+end
+
+local shared_dict = ngx.shared.app_cache
+local cjson = require("cjson.safe")
+
+function _M.get_user(user_id)
+    -- 第一级：本地 LRU
+    local user = cache:get(user_id)
+    if user then
+        return user, nil
+    end
+
+    -- 第二级：共享字典
+    local user_json = shared_dict:get("user:" .. user_id)
+    if user_json then
+        user = cjson.decode(user_json)
+        cache:set(user_id, user)
+        return user, nil
+    end
+
+    -- 第三级：调用后端服务（实际项目中可能还有 Redis 层）
+    local httpc = http.new()
+    local res, err = httpc:request_uri("http://user-backend/api/users/" .. user_id)
+    if err or res.status ~= 200 then
+        return nil, "failed to fetch user"
+    end
+
+    user = cjson.decode(res.body)
+    -- 回填缓存
+    shared_dict:set("user:" .. user_id, res.body, 300)  -- TTL 5 分钟
+    cache:set(user_id, user)
+
+    return user, nil
+end
+
+return _M
+```
+
+### 限流模式
+
+- **基于共享字典的滑动窗口**：使用 `incr` + TTL 实现简单限流
+- **令牌桶/漏桶**：使用 `lua-resty-limit-traffic` 实现更精确的限流算法
+- **多维度限流**：按 IP、用户 ID、API 路径分别限流，避免单一维度导致误杀
+
+**示例**（多维度限流）:
+
+```lua
+-- lua/app/rate_limit.lua
+local limit_traffic = require("resty.limit.traffic")
+local limit_req = require("resty.limit.req")
+
+local _M = {}
+
+-- IP 限流：100 req/s
+local lim_ip = limit_req.new("rate_limit", 100, 10)
+
+-- 用户限流：50 req/s
+local lim_user = limit_req.new("rate_limit", 50, 5)
+
+function _M.check(ip, user_id)
+    -- 第一层：IP 限流
+    local delay, err = lim_ip:incoming(ip, true)
+    if err then
+        return false, "internal_error"
+    end
+    if delay >= 0.001 then
+        return false, "ip_rate_limited"
+    end
+
+    -- 第二层：用户限流（如果已认证）
+    if user_id then
+        local delay, err = lim_user:incoming(user_id, true)
+        if err then
+            return false, "internal_error"
+        end
+        if delay >= 0.001 then
+            return false, "user_rate_limited"
+        end
+    end
+
+    return true, nil
+end
+
+return _M
+```
+
+### 集中日志与 Trace 传播
+
+- 在 `log_by_lua*` 阶段统一收集访问日志、错误日志、业务指标
+- 使用 `trace-id`（从请求头或生成）贯穿整个请求链路，便于分布式追踪
+- 日志格式统一（JSON 或结构化文本），便于后续解析与聚合
+
+**示例**（统一日志处理）:
+
+```lua
+-- lua/app/log.lua
+local _M = {}
+
+local ngx = ngx
+local cjson = require("cjson.safe")
+
+function _M.write_access_log()
+    local trace_id = ngx.var.http_x_trace_id or ngx.ctx.trace_id or ngx.var.request_id
+    local log_data = {
+        time = ngx.localtime(),
+        method = ngx.req.get_method(),
+        uri = ngx.var.request_uri,
+        status = ngx.status,
+        upstream_time = ngx.var.upstream_response_time,
+        request_time = ngx.var.request_time,
+        remote_addr = ngx.var.remote_addr,
+        user_id = ngx.ctx.current_user and ngx.ctx.current_user.user_id or nil,
+        trace_id = trace_id,
+    }
+
+    -- 写入访问日志（可配置输出到文件、syslog、或发送到日志服务）
+    ngx.log(ngx.INFO, cjson.encode(log_data))
+end
+
+function _M.write_error_log(err, context)
+    local log_data = {
+        time = ngx.localtime(),
+        level = "error",
+        err = err,
+        context = context,
+        trace_id = ngx.ctx.trace_id,
+        uri = ngx.var.request_uri,
+    }
+    ngx.log(ngx.ERR, cjson.encode(log_data))
+end
+
+return _M
+```
+
+---
+
+## 性能与内存管理
+
+### 避免阻塞 I/O
+
+- 在请求处理阶段（`access_by_lua*`、`content_by_lua*`）**禁止使用阻塞 I/O**
+- 所有网络请求使用 `lua-resty-http`、`lua-resty-redis` 等非阻塞库
+- 如需执行耗时操作（如批量上报、清理任务），使用 `ngx.timer.at` 异步执行
+
+**示例**（异步任务）:
+
+```lua
+-- lua/app/metrics.lua
+local _M = {}
+
+local cjson = require("cjson.safe")
+
+function _M.report_async(metric_name, value)
+    -- 使用 timer 异步上报，不阻塞当前请求
+    local ok, err = ngx.timer.at(0, function(premature)
+        if premature then
+            return
+        end
+
+        -- 批量上报到监控系统
+        local httpc = require("resty.http").new()
+        httpc:request_uri("http://metrics-backend/api/metrics", {
+            method = "POST",
+            body = cjson.encode({ name = metric_name, value = value }),
+        })
+    end)
+
+    if not ok then
+        ngx.log(ngx.ERR, "failed to create timer: ", err)
+    end
+end
+
+return _M
+```
+
+### 减少临时对象创建
+
+- 在热路径（高频调用的函数）中避免频繁创建表、字符串拼接
+- 复用连接对象（HTTP client、Redis client），使用连接池
+- 使用 `table.new()` 预分配表大小（LuaJIT 支持），减少扩容开销
+
+**示例**（连接池复用）:
+
+```lua
+-- lua/services/base_service.lua
+local http = require("resty.http")
+
+local _M = {}
+
+-- 复用 HTTP client（每个 worker 一个实例）
+local httpc = http.new()
+
+function _M.call_upstream(upstream_url, method, body)
+    -- 复用连接，避免每次创建新 client
+    httpc:set_timeout(2000)
+    local res, err = httpc:request_uri(upstream_url, {
+        method = method,
+        body = body,
+        headers = {
+            ["Content-Type"] = "application/json",
+        }
+    })
+
+    if err then
+        return nil, err
+    end
+
+    return res, nil
+end
+
+return _M
+```
+
+### 合理使用共享字典容量
+
+- 根据实际数据量设置 `lua_shared_dict` 大小，避免过大浪费内存或过小导致频繁淘汰
+- 监控共享字典使用率（`ngx.shared.DICT:capacity()` 与 `ngx.shared.DICT:free_space()`），及时告警
+
+---
+
+## 错误处理与观测性
+
+### 错误码约定
+
+- 定义统一的错误码体系（如 `INVALID_TOKEN`、`RATE_LIMITED`、`UPSTREAM_ERROR`），便于前端与监控系统识别
+- 错误响应格式统一：`{ code: "ERROR_CODE", message: "user-friendly message", data: {} }`
+
+**示例**（统一错误响应）:
+
+```lua
+-- lua/app/response.lua
+local _M = {}
+
+local cjson = require("cjson.safe")
+
+function _M.error(code, message, http_status)
+    http_status = http_status or 500
+    ngx.status = http_status
+    ngx.header.content_type = "application/json"
+    ngx.say(cjson.encode({
+        code = code,
+        message = message,
+        data = {}
+    }))
+    ngx.exit(http_status)
+end
+
+function _M.success(data)
+    ngx.status = 200
+    ngx.header.content_type = "application/json"
+    ngx.say(cjson.encode({
+        code = "SUCCESS",
+        message = "ok",
+        data = data
+    }))
+end
+
+return _M
+```
+
+### 监控指标收集
+
+- 在关键路径埋点：QPS、延迟（P50/P95/P99）、错误率、缓存命中率
+- 使用 Prometheus 格式或直接上报到监控系统（如通过 `ngx.timer.at` 批量上报）
+- 关键指标：请求总数、成功/失败数、各阶段耗时（认证、限流、后端调用）
+
+**示例**（指标收集）:
+
+```lua
+-- lua/app/metrics.lua
+local _M = {}
+
+local metrics_dict = ngx.shared.app_cache
+
+function _M.incr_counter(name, labels)
+    local key = name
+    if labels then
+        for k, v in pairs(labels) do
+            key = key .. ":" .. k .. "=" .. v
+        end
+    end
+    metrics_dict:incr(key, 1, 0)
+end
+
+function _M.record_latency(name, duration_ms)
+    local key = name .. ":latency"
+    -- 记录到共享字典，定时任务汇总上报
+    metrics_dict:incr(key .. ":sum", duration_ms, 0)
+    metrics_dict:incr(key .. ":count", 1, 0)
+end
+
+return _M
+```
+
+### 分布式追踪集成
+
+- 支持 OpenTracing / OpenTelemetry 标准，在请求头中传播 `trace-id`、`span-id`
+- 在调用下游服务时，将 trace 信息注入请求头，保持链路完整
+
+**示例**（Trace 传播）:
+
+```lua
+-- lua/services/base_service.lua
+function _M.call_upstream(upstream_url, method, body)
+    local trace_id = ngx.ctx.trace_id or ngx.var.request_id
+    local span_id = ngx.ctx.span_id or ngx.var.request_id
+
+    local httpc = require("resty.http").new()
+    local res, err = httpc:request_uri(upstream_url, {
+        method = method,
+        body = body,
+        headers = {
+            ["X-Trace-Id"] = trace_id,
+            ["X-Span-Id"] = span_id,
+        }
+    })
+
+    return res, err
+end
+```
+
+---
+
+## 开发流程（架构演进）
+
+### 架构设计步骤
+
+1. **明确分层边界**：先定义配置层、网关能力层、业务服务层的职责与接口
+2. **实现配置与路由**：建立环境配置与路由表，确保请求能正确分发
+3. **抽取横切能力**：将认证、限流、日志等从 location 配置中抽到独立模块
+4. **封装服务调用**：统一封装对下游服务的访问，包括重试、熔断、降级
+5. **引入缓存与性能优化**：根据实际流量与延迟需求，引入多级缓存与连接池
+6. **完善观测性**：添加日志、指标、追踪，确保生产环境可观测
+7. **持续重构**：根据实际使用情况调整模块边界，避免过度设计
+
+### 架构原则
+
+- **渐进式演进**：从简单结构开始，按需引入复杂度（缓存、限流、追踪）
+- **关注点分离**：配置、网关能力、业务逻辑、观测性各自独立，便于测试与维护
+- **可测试性优先**：模块设计时考虑如何单测与集成测试，避免「上帝模块」难以测试
+- **性能与可维护性平衡**：不过度优化，优先保证代码清晰与可维护，在瓶颈处再优化
