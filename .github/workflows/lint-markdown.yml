@@ -1,4 +1,4 @@
-name: Lint Markdown
+name: Validate Rules
 
 on:
   push:
@@ -6,16 +6,18 @@ on:
       - "**.md"
       - "**.mdc"
       - ".markdownlint.json"
-      - "scripts/lint-md.py"
+      - "scripts/**/*.py"
+      - "pyproject.toml"
   pull_request:
     paths:
       - "**.md"
       - "**.mdc"
       - ".markdownlint.json"
-      - "scripts/lint-md.py"
+      - "scripts/**/*.py"
+      - "pyproject.toml"
 
 jobs:
-  lint:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -33,21 +35,100 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt || true
-          # 如果使用 uv
-          # curl -LsSf https://astral.sh/uv/install.sh | sh
-          # uv sync
+          # 使用 uv 安装依赖（如果可用）
+          if command -v uv &> /dev/null; then
+            uv sync
+          else
+            # 安装 uv
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            export PATH="$HOME/.cargo/bin:$PATH"
+            uv sync
+          fi
 
-      - name: Lint Markdown files
+      - name: Get changed files
+        id: changed-files
         run: |
-          python scripts/lint-md.py --check $(git diff --name-only --diff-filter=ACMRTUXB ${{ github.event.before }} ${{ github.sha }} | grep -E '\.(md|mdc)$' || find . -name '*.md' -o -name '*.mdc' | head -20)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+          
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACMRTUXB ${BASE_SHA} ${HEAD_SHA} | grep -E '\.(md|mdc)$' || echo "")
+          echo "files=${CHANGED_FILES}" >> $GITHUB_OUTPUT
+          echo "Changed files: ${CHANGED_FILES}"
+
+      - name: Lint Markdown format
+        id: lint-markdown
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No Markdown files changed, skipping format check"
+            exit 0
+          fi
+          
+          python scripts/lint-md.py --check ${CHANGED_FILES}
         continue-on-error: false
+
+      - name: Lint rule quality
+        id: lint-rules
+        run: |
+          CHANGED_FILES="${{ steps.changed-files.outputs.files }}"
+          if [ -z "${CHANGED_FILES}" ]; then
+            echo "No rule files changed, skipping quality check"
+            exit 0
+          fi
+          
+          # 检查是否有规则文件（排除 README.md 和 docs/）
+          RULE_FILES=$(echo "${CHANGED_FILES}" | grep -v "README.md" | grep -v "^docs/" || echo "")
+          if [ -z "${RULE_FILES}" ]; then
+            echo "No rule files to check, skipping"
+            exit 0
+          fi
+          
+          # 验证每个规则文件
+          for file in ${RULE_FILES}; do
+            if [ -f "${file}" ]; then
+              python scripts/lint-rules.py "${file}" --check || exit 1
+            fi
+          done
+        continue-on-error: false
+
+      - name: Validate token consumption (if both versions exist)
+        id: validate-tokens
+        run: |
+          # 仅在完整版目录有变更时运行（可选验证）
+          BASE_SHA="${{ github.event.before }}"
+          HEAD_SHA="${{ github.sha }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          fi
+          
+          if git diff --name-only --diff-filter=ACMRTUXB ${BASE_SHA} ${HEAD_SHA} | grep -q "full-rules/.*\.mdc"; then
+            echo "Full rules changed, checking token consumption..."
+            python scripts/calculate-tokens.py full-rules/ --compare || echo "Token validation failed (non-blocking)"
+          fi
+        continue-on-error: true
 
       - name: Report errors
         if: failure()
         run: |
-          echo "::error::Markdown 格式检查失败"
+          echo "::error::规则验证失败"
+          echo ""
+          echo "## 修复建议"
+          echo ""
+          echo "### Markdown 格式问题"
           echo "请在本地运行以下命令修复格式问题:"
           echo "  python scripts/format-md.py <文件>"
           echo "或安装 markdownlint 后运行:"
           echo "  markdownlint --fix <文件>"
+          echo ""
+          echo "### 规则质量问题"
+          echo "请检查规则文件是否符合规范:"
+          echo "  python scripts/lint-rules.py <文件>"
+          echo ""
+          echo "### Token 消耗问题"
+          echo "请检查精简版是否达到减少 70% 的目标:"
+          echo "  python scripts/calculate-tokens.py full-rules/ --compare"
