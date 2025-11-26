@@ -63,4 +63,3 @@ pytest --cov=scripts --cov-report=html
 ## 注意事项
 
 测试使用 `unittest.mock` 来模拟系统命令调用，因此不需要实际安装 `markdownlint` 即可运行测试。
-

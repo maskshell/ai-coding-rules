@@ -288,7 +288,7 @@ AI: "之前遇到过类似问题（修复 ID: #123），是否检查了 token �
 npm install @modelcontextprotocol/server-memory
 ```
 
-2. 配置 MCP Server（Claude Code）：
+1. 配置 MCP Server（Claude Code）：
 
 ```json
 {

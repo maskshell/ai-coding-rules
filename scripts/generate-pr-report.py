@@ -21,12 +21,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
-try:
-    import yaml
-except ImportError:
-    print("错误: 需要安装 PyYAML 库")
-    print("安装命令: pip install pyyaml 或 uv add pyyaml")
-    sys.exit(1)
+# yaml 模块在当前版本中未使用，但保留导入以便将来扩展
+# try:
+#     import yaml  # noqa: F401
+# except ImportError:
+#     print("错误: 需要安装 PyYAML 库")
+#     print("安装命令: pip install pyyaml 或 uv add pyyaml")
+#     sys.exit(1)
 
 
 def run_command(cmd: list[str], capture_output: bool = True) -> tuple[int, str, str]:
@@ -169,7 +170,9 @@ def check_documentation(changed_files: dict[str, list[str]]) -> dict[str, Any]:
     return {
         "has_rule_changes": has_rule_changes,
         "docs_updated": docs_updated,
-        "recommendation": "建议更新 CHANGELOG.md" if has_rule_changes and not docs_updated else "文档已更新",
+        "recommendation": "建议更新 CHANGELOG.md"
+        if has_rule_changes and not docs_updated
+        else "文档已更新",
     }
 
 
@@ -184,7 +187,9 @@ def check_token_consumption(changed_files: dict[str, list[str]]) -> dict[str, An
         Token 消耗检查结果
     """
     all_files = changed_files["added"] + changed_files["modified"]
-    has_full_rules = any(f.startswith("full-rules/") and f.endswith(".mdc") for f in all_files)
+    has_full_rules = any(
+        f.startswith("full-rules/") and f.endswith(".mdc") for f in all_files
+    )
 
     if not has_full_rules:
         return {"checked": False, "message": "未检测到完整版规则变更"}
@@ -243,7 +248,9 @@ def calculate_quality_score(
             score = max(0, score)
 
     # 文档更新（20分）
-    if doc_check.get("has_rule_changes", False) and not doc_check.get("docs_updated", False):
+    if doc_check.get("has_rule_changes", False) and not doc_check.get(
+        "docs_updated", False
+    ):
         score -= 20
 
     # Token 消耗（40分）
@@ -332,7 +339,9 @@ def generate_markdown_report(report: dict[str, Any]) -> str:
 {status_emoji} **平均减少比例**: {avg_reduction:.2f}%
 - **目标**: ≥ 70%
 - **状态**: {'✅ 达标' if meets_target else '⚠️ 未达标'}
-- **达标文件数**: {token_check.get('meets_target_count', 0)}/{token_check.get('total_files', 0)}
+- **达标文件数**: {token_check.get('meets_target_count', 0)}/{
+    token_check.get('total_files', 0)
+}
 
 """
     else:
@@ -346,7 +355,9 @@ def generate_markdown_report(report: dict[str, Any]) -> str:
     suggestions = []
     if rule_check.get("has_rules", False) and not rule_check.get("valid", True):
         suggestions.append("修复规则文件中的错误")
-    if doc_check.get("has_rule_changes", False) and not doc_check.get("docs_updated", False):
+    if doc_check.get("has_rule_changes", False) and not doc_check.get(
+        "docs_updated", False
+    ):
         suggestions.append("更新 CHANGELOG.md 记录变更")
     if token_check.get("checked", False) and not token_check.get("meets_target", False):
         suggestions.append("优化精简版规则，减少 token 消耗")
@@ -424,4 +435,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

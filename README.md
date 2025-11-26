@@ -190,4 +190,3 @@ The rule writing guide includes:
 ## License
 
 This project is licensed under the [MIT License](./LICENSE).
-

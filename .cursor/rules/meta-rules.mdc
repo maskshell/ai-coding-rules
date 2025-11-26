@@ -4,9 +4,9 @@ globs:
   - "**/*"
 alwaysApply: true
 tags:
-  - general
+- general
   - meta
-  - coding-standards
+- coding-standards
 version: "1.0.0"
 author: "ai-coding-rules-team"
 ---
