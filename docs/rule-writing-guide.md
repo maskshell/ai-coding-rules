@@ -36,7 +36,7 @@ IDE层（最通用）
 
 ### 2. 职责单一
 
-- 每个 `.cursor/coderules/` 目录只包含该类别的规则
+- 每个 `.cursor/rules/` 目录只包含该类别的规则（注意：Cursor 官方目录名是 `rules`，不是 `coderules`）
 - 不混合不同层次的规则
 - 不重复其他层次的规则
 
@@ -102,7 +102,7 @@ IDE层（最通用）
 ```text
 full-rules/project-templates/react-app/
 ├── .cursor/
-│   └── coderules/          # AI规则（每层2-3个文件）
+│   └── rules/              # AI规则（每层2-3个文件）
 │       ├── 01-react-basics.md
 │       ├── 02-react-ui.md
 │       └── ...
@@ -466,7 +466,7 @@ export function user_profile() { ... }
    ```markdown
    不使用：
    - 这是第一条规则。这条规则非常重要，因为...
-   
+
    使用：
    - 这是第一条规则
    ```
@@ -476,7 +476,7 @@ export function user_profile() { ... }
    ```markdown
    删除：
    ### 为什么使用这个规范
-   
+
    保留：
    ### 命名规范
    - 理由：（合并到规则中）
@@ -488,7 +488,7 @@ export function user_profile() { ... }
    合并前：
    - 使用 PascalCase 命名
    - 保持一致性
-   
+
    合并后：
    - 使用 PascalCase 命名，保持一致性
    ```
@@ -616,9 +616,9 @@ function Example(props) { ... }
    精简版必须保留：
 
    ### Context7 使用
-   
+
    在涉及第三方库时，自动使用 Context7 查询最新文档。
-   
+
    **何时使用**：
    - 涉及第三方库的代码生成
    - 提供设置或配置步骤
@@ -631,7 +631,7 @@ function Example(props) { ... }
    完整版可能有很多解释，但精简版必须保留核心指令：
 
    ### 安全规范
-   
+
    - 永不提交敏感信息（.env、API keys）
    - 验证用户输入，防止注入攻击
    ```
@@ -696,7 +696,7 @@ npm run convert-to-concise -- full-rules/ide-layer/01-general.md
 
    ```markdown
    # React 基础规范
-   
+
    **最后更新**: 2025-11-21
    **更新内容**: 添加 Composition API 规范
    ```
@@ -728,7 +728,7 @@ fix: 修正 React hooks 规则表述（修复）
    ```text
    new-framework-app/
    ├── .cursor/
-   │   └── coderules/
+   │   └── rules/
    │       ├── 01-{framework}-basics.md
    │       └── 02-{framework}-advanced.md
    └── docs/
@@ -793,6 +793,8 @@ fix: 修正 React hooks 规则表述（修复）
 
 创建或更新规则文件时，请检查：
 
+### 内容检查
+
 - [ ] 遵循分层架构（不越层）
 - [ ] 文件名符合命名规范（数字前缀、小写、短横线）
 - [ ] 遵循内容规范（职责单一、有示例）
@@ -803,6 +805,59 @@ fix: 修正 React hooks 规则表述（修复）
 - [ ] 添加开发流程和步骤
 - [ ] 更新 README.md（新项目模板）
 - [ ] 更新本指南（新增通用原则）
+
+### 格式检查（自动化验证）
+
+- [ ] 所有代码块指定语言
+- [ ] 标题后有空行
+- [ ] 代码块前后空行（各 1 个）
+- [ ] 列表前后有空行
+- [ ] 有序列表使用 `1.` 前缀
+- [ ] 无标题跳级
+- [ ] 文件无 BOM
+- [ ] 规则文件名符合规范（如适用）
+- [ ] MDC frontmatter 格式正确（如适用）
+- [ ] Token 消耗符合目标（精简版：减少 70-80%）
+
+### Token 消耗检查
+
+**精简版规则 Token 消耗目标**（相对于完整版）：
+
+| 层级 | Token 范围 | 减少比例 | 验证方式 |
+|-----|-----------|---------|---------|
+| IDE 层精简版 | 100-200 | ≥70% | `npm run check:tokens file` |
+| 项目层精简版 | 150-300 | ≥70% | `npm run check:tokens file` |
+| 完整版 | 500-800 | - | 参考基准 |
+
+### 在提交前运行
+
+```bash
+# 1. 安装 Git Hooks（自动在提交前检查）
+./scripts/setup-hooks.sh
+
+# 2. 手动运行所有检查
+npm run validate:all
+
+# 3. 如果只想检查特定文件
+npx markdownlint filename.md --config .markdownlint.json
+npx prettier --check filename.md
+
+# 4. 自动修复（提交前）
+npm run lint:md:fix   # 修复 Markdown 格式
+npm run format        # 格式化所有文件
+```
+
+### Git Hooks 自动检查
+
+已配置 Pre-commit Hook，每次提交时自动：
+
+1. ✅ 检查代码块语言
+2. ✅ 检查标题后空行
+3. ✅ 检查列表格式
+4. ✅ 检查有序列表前缀
+5. ✅ 检查 Token 消耗（精简版）
+6. ✅ 自动修复可修复的问题（可选）
+7. ⚠️ 阻止提交（如果有错误）
 
 ## 参考资料
 

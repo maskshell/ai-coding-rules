@@ -22,14 +22,23 @@
 
 ### Cursor 用户
 
-在 `~/.cursor/coderules/` 中创建符号链接到精简版规则：
+**全局规则（IDE 层）**：在 `~/.cursor/rules/` 中创建符号链接
 
 ```bash
-# IDE 层规则
-ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/coderules/
+# IDE 层规则（适用于所有项目）
+mkdir -p ~/.cursor/rules
+ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
+```
 
-# 项目特定规则（进入项目后执行）
-ln -s /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* ~/.cursor/coderules/
+**项目规则（项目模板）**：在项目的 `.cursor/rules/` 目录中创建符号链接
+
+```bash
+# 进入你的项目目录
+cd /path/to/your/project
+
+# 项目特定规则（仅适用于当前项目）
+mkdir -p .cursor/rules
+ln -s /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
 ```
 
 ### Claude Code 用户
@@ -45,8 +54,9 @@ ln -s /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* ~/.c
 或者直接将精简版规则文件复制到项目根目录：
 
 ```bash
-# 复制到项目根目录
-cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/coderules/
+# 复制到项目根目录（项目规则）
+mkdir -p .cursor/rules
+cp /path/to/ai-coding-rules/.concise-rules/project-templates/react-app/* .cursor/rules/
 ```
 
 ### 其他编辑器

@@ -14,14 +14,17 @@
 
 ## 使用方法
 
-将这些文件复制到 Cursor 配置目录：
+将这些文件复制到 Cursor 全局配置目录（适用于所有项目）：
 
 ```bash
-cp ide-layer/*.md ~/.cursor/coderules/
+# 注意：Cursor IDE 官方规则目录是 ~/.cursor/rules/
+mkdir -p ~/.cursor/rules
+cp ide-layer/rulesets/*.md ~/.cursor/rules/
 ```
 
 或使用符号链接（便于统一管理）：
 
 ```bash
-ln -s ~/.cursor/coderules ~/path/to/this/repo/ide-layer/rulesets/
+mkdir -p ~/.cursor/rules
+ln -s $(pwd)/ide-layer/rulesets/* ~/.cursor/rules/
 ```
