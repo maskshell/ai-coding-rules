@@ -3,16 +3,16 @@ name: Lint Markdown
 on:
   push:
     paths:
-      - '**.md'
-      - '**.mdc'
-      - '.markdownlint.json'
-      - 'scripts/lint-md.py'
+      - "**.md"
+      - "**.mdc"
+      - ".markdownlint.json"
+      - "scripts/lint-md.py"
   pull_request:
     paths:
-      - '**.md'
-      - '**.mdc'
-      - '.markdownlint.json'
-      - 'scripts/lint-md.py'
+      - "**.md"
+      - "**.mdc"
+      - ".markdownlint.json"
+      - "scripts/lint-md.py"
 
 jobs:
   lint:
@@ -20,16 +20,16 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-      
+          python-version: "3.10"
+
       - name: Install markdownlint
         run: |
           npm install -g markdownlint-cli
-      
+
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -37,12 +37,12 @@ jobs:
           # 如果使用 uv
           # curl -LsSf https://astral.sh/uv/install.sh | sh
           # uv sync
-      
+
       - name: Lint Markdown files
         run: |
           python scripts/lint-md.py --check $(git diff --name-only --diff-filter=ACMRTUXB ${{ github.event.before }} ${{ github.sha }} | grep -E '\.(md|mdc)$' || find . -name '*.md' -o -name '*.mdc' | head -20)
         continue-on-error: false
-      
+
       - name: Report errors
         if: failure()
         run: |
@@ -51,4 +51,3 @@ jobs:
           echo "  python scripts/format-md.py <文件>"
           echo "或安装 markdownlint 后运行:"
           echo "  markdownlint --fix <文件>"
-
