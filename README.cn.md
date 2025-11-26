@@ -4,36 +4,45 @@
 
 **中文** | [English](README.md)
 
-分层的 AI Rules 配置示例，满足不同层面的 AI 编码助手需求。
+- 分层的 AI Rules 配置示例，满足不同层面的 AI 编码助手需求。
+- 同时配置了元规则（编写规则的规则），方便从 AI 生成新类型的规则。
 
 ## 目录结构
 
 ```text
 ai-coding-rules/
-├── full-rules/                         # 完整版规则（文档和模板）
-│   ├── ide-layer/                      # IDE 层级规则（最通用）
-│   └── project-templates/              # 项目模板
-│       ├── react-app/
-│       ├── vue-app/
-│       ├── python-backend/
-│       └── fullstack-monorepo/
-├── .concise-rules/                     # 精简版规则（推荐日常使用）
+├── full-rules/                         # 完整版规则（MDC，含文档和模板）
+│   ├── ide-layer/
+│   │   └── rulesets/                   # IDE 层规则（最通用）
+│   └── project-templates/              # 项目模板（React/Vue/Python/全栈 等）
+├── .concise-rules/                     # 精简版规则（MDC，推荐日常使用）
 │   ├── ide-layer/                      # IDE 层精简规则
-│   │   ├── 01-general.md
-│   │   └── ...
-│   ├── project-templates/              # 项目层精简规则
-│   │   ├── react-app/
-│   │   ├── vue-app/
-│   │   ├── python-backend/
-│   │   └── fullstack-monorepo/
-│   └── README.md                       # 精简版使用指南
-├── docs/                               # 指导性文档
-│   ├── rule-writing-guide.md
-│   └── ai-coding-tools.md
-├── README.md
+│   └── project-templates/              # 项目层精简规则
+├── .cursor/
+│   └── rules/                          # 本仓库自身使用的项目级规则（MDC）
+├── scripts/                            # 自动化脚本（格式化 / 校验 / 迁移 / 报告）
+├── tests/                              # 脚本对应的测试代码（pytest）
+├── docs/                               # 指导性文档与技术说明
+│   ├── rule-writing-guide.md           # 规则编写指南
+│   ├── ai-coding-tools.md              # AI 编码工具推荐（旧版）
+│   ├── vibe-coding-tools.md            # AI 编码工具推荐（新版，聚焦本仓库）
+│   ├── tech-stack-recommendation.md    # 技术栈推荐与选型建议
+│   ├── mdc-frontmatter-spec.md         # MDC frontmatter 规范
+│   └── mdc-conditional-mode-analysis.md# MDC 条件模式分析
+├── .github/
+│   └── workflows/                      # CI 工作流（Markdown / 规则 / PR 质量门禁）
+├── .pre-commit-config.yaml             # pre-commit 钩子配置
+├── PRE_COMMIT_RULES.md                 # pre-commit 配置说明
+├── .markdownlint.json                  # Markdown 格式校验规则
+├── .prettierrc.yaml                    # Prettier 配置（JSON/YAML）
+├── pyproject.toml                      # Python 项目与 Ruff 配置
+├── uv.lock                             # uv 依赖锁定文件
+├── IMPROVEMENT_PLAN.md                 # 改进计划与实施进度
+├── README.md                           # 英文说明
+├── README.cn.md                        # 中文说明
 ├── CONTRIBUTING.md                     # 贡献指南
-├── LICENSE                             # MIT 许可证
-└── CHANGELOG.md                        # 更新日志
+├── CHANGELOG.md                        # 更新日志
+└── LICENSE                             # MIT 许可证
 ```
 
 ## 双轨制规则
@@ -142,6 +151,22 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 - [Python后端](./full-rules/project-templates/python-backend/docs/coding-standards.md)
 - [全栈项目](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 - [规则编写指南（含敏捷和设计模式指导）](./docs/rule-writing-guide.md)
+
+## 使用 AI 生成新类型规则的提示词示例
+
+当你希望基于现有元规则生成新的规则文件（例如为某个框架或工具新增一套规范），只需要告诉 AI「目标」和「应遵守哪些规则文件」，无需在提示词中重复具体格式细节。
+
+```text
+你是本仓库的规则协作者，请严格遵守
+`.cursor/rules/meta-rules.mdc` 中的元规则，
+以及 `full-rules/ide-layer/rulesets/` 的风格，
+为「{技术栈/场景名}」生成一套新的规则（包含完整版和精简版）。
+
+要求：
+- 使用与现有规则一致的 MDC 格式和结构
+- 文件命名、frontmatter、目录层级、精简版转换等细节都按 meta-rules 执行
+- 先给出目录大纲，再补全各小节内容
+```
 
 ## 🔧 工具推荐
 

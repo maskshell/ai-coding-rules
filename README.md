@@ -4,36 +4,45 @@
 
 [中文](README.cn.md) | **English**
 
-Layered AI Rules configuration examples to meet different levels of AI coding assistant needs.
+- Layered AI Rules configuration examples to meet different levels of AI coding assistant needs
+- Includes meta-rules (rules for writing rules) to help AI generate new rule types reliably
 
 ## Directory Structure
 
 ```text
 ai-coding-rules/
-├── full-rules/                         # Full version rules (documentation and templates)
-│   ├── ide-layer/                      # IDE layer rules (most general)
-│   └── project-templates/              # Project templates
-│       ├── react-app/
-│       ├── vue-app/
-│       ├── python-backend/
-│       └── fullstack-monorepo/
-├── .concise-rules/                     # Concise version rules (recommended for daily use)
+├── full-rules/                         # Full rules (MDC, docs and templates)
+│   ├── ide-layer/
+│   │   └── rulesets/                   # IDE layer rules (most general)
+│   └── project-templates/              # Project templates (React/Vue/Python/Fullstack, etc.)
+├── .concise-rules/                     # Concise rules (MDC, recommended for daily use)
 │   ├── ide-layer/                      # IDE layer concise rules
-│   │   ├── 01-general.md
-│   │   └── ...
-│   ├── project-templates/              # Project layer concise rules
-│   │   ├── react-app/
-│   │   ├── vue-app/
-│   │   ├── python-backend/
-│   │   └── fullstack-monorepo/
-│   └── README.md                       # Concise version usage guide
-├── docs/                               # Guidance documents
-│   ├── rule-writing-guide.md
-│   └── ai-coding-tools.md
-├── README.md
+│   └── project-templates/              # Project layer concise rules
+├── .cursor/
+│   └── rules/                          # Project-level rules used by this repo (MDC)
+├── scripts/                            # Automation scripts (format, lint, migrate, reports)
+├── tests/                              # Tests for scripts (pytest)
+├── docs/                               # Guidance and design documents
+│   ├── rule-writing-guide.md           # Rule writing guide
+│   ├── ai-coding-tools.md              # AI coding tools recommendation (legacy)
+│   ├── vibe-coding-tools.md            # AI coding tools recommendation (updated, for this repo)
+│   ├── tech-stack-recommendation.md    # Tech stack recommendations
+│   ├── mdc-frontmatter-spec.md         # MDC frontmatter specification
+│   └── mdc-conditional-mode-analysis.md# MDC conditional mode analysis
+├── .github/
+│   └── workflows/                      # CI workflows (Markdown / rules / PR quality gate)
+├── .pre-commit-config.yaml             # pre-commit hooks configuration
+├── PRE_COMMIT_RULES.md                 # pre-commit configuration documentation
+├── .markdownlint.json                  # Markdown lint rules
+├── .prettierrc.yaml                    # Prettier config for JSON/YAML
+├── pyproject.toml                      # Python project and Ruff configuration
+├── uv.lock                             # uv dependency lockfile
+├── IMPROVEMENT_PLAN.md                 # Improvement plan and progress
+├── README.md                           # English README
+├── README.cn.md                        # Chinese README
 ├── CONTRIBUTING.md                     # Contribution guide
-├── LICENSE                             # MIT License
-└── CHANGELOG.md                        # Changelog
+├── CHANGELOG.md                        # Changelog
+└── LICENSE                             # MIT License
 ```
 
 ## Dual-Track Rules System
@@ -142,6 +151,23 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 - [Python Backend](./full-rules/project-templates/python-backend/docs/coding-standards.md)
 - [Full-Stack Project](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 - [Rule Writing Guide (including Agile and Design Patterns)](./docs/rule-writing-guide.md)
+
+## Prompt Examples for Generating New Rule Types with AI
+
+When you want to generate a new rule set (for a specific framework, tool, or workflow), you only need to describe the **goal** and tell the AI which rule files to follow. The implementation details (MDC structure, frontmatter, full vs concise, etc.) are already defined in the meta-rules.
+
+```text
+Act as a collaborator on this repository. Following the meta-rules in
+`.cursor/rules/meta-rules.mdc` and the style of `full-rules/ide-layer/rulesets/`,
+create a new rule set for “{tech stack / scenario}” (including both full and
+concise variants).
+
+Requirements:
+- Use the same MDC format and structure as existing rules
+- Obey all naming, frontmatter, and concise-conversion principles defined
+  in the meta-rules
+- First propose a heading outline, then complete each section
+```
 
 ## 🔧 Recommended Tools
 

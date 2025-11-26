@@ -81,6 +81,7 @@ repos:
         entry: python scripts/lint-md.py
         language: system
         types: [markdown]
+        exclude: '^(README\.md|README\.cn\.md)$'  # 根 README 系列使用通用规范，不执行项目特定规则检查
         pass_filenames: true
         args: [--check]
 
@@ -90,5 +91,7 @@ repos:
         entry: python scripts/lint-rules.py
         language: system
         types: [markdown]
+        files: '\.(md|mdc)$'
+        exclude: '^(README\.md|README\.cn\.md|docs/.*)$'  # 排除根 README 系列和 docs/ 目录
         pass_filenames: true
         args: [--check]
