@@ -1,0 +1,89 @@
+---
+description: 开发工作流规范
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# 开发工作流规范
+
+## 文件格式化
+
+### 优先使用项目标准工具
+
+- 优先使用项目标准的格式化工具，而非 AI 格式化
+- 使用项目配置的工具（如 `ruff format` 用于 Python，`prettier` 用于 JavaScript）
+- 仅在本地工具不可用或不足时，才使用 AI 格式化
+
+**原因**：项目标准工具确保格式一致性，且执行速度快，减少 token 消耗。
+
+## 代码质量检查
+
+### Pre-commit 检查要求
+
+提交代码前，**必须运行以下检查**（与 CI 工作流保持一致）：
+
+#### 1. 代码格式化检查
+
+```bash
+# 检查代码格式
+ruff format --check .
+
+# 如检查失败，自动修复后再次验证
+ruff format .
+ruff format --check .
+```
+
+#### 2. 代码检查
+
+```bash
+# 运行 linter
+ruff check .
+
+# 如检查失败，自动修复后再次验证
+ruff check . --fix
+ruff check .
+```
+
+#### 3. YAML 文件检查（如修改了 YAML 文件）
+
+```bash
+yamllint . --config-file .yamllint || true
+```
+
+**注意**：`|| true` 允许非关键警告，与 CI 行为一致。
+
+### 检查要求
+
+- 这些检查**必须**与 `.github/workflows/ci.yml` 中的 lint-and-format 任务完全一致
+- 自动修复后仍失败的问题，需手动修复后再提交
+- 例外：用户明确要求跳过检查时（如"跳过检查提交"），遵循用户指示
+
+## 工具使用原则
+
+### 本地工具优先
+
+在 AI 生成代码过程中，如需进行代码检查和格式化：
+
+- ✅ 优先调用本地工具（Ruff、Prettier、ESLint）进行代码检查和格式化
+- ✅ 使用工具命令而非代码示例来指导格式化
+- ❌ 避免在对话中生成大量格式化后的代码（会增加 token 消耗）
+
+**示例**：
+
+```bash
+# ✅ 推荐：使用本地工具
+ruff format file.py
+ruff check --fix file.py
+prettier --write file.js
+
+# ❌ 不推荐：在对话中生成完整格式化后的代码
+```
+
+## 与现有规则的关系
+
+本规则是对 `01-general.mdc` 中开发流程原则的具体化。`01-general.mdc` 定义了开发流程的抽象原则（MVP 优先、小步迭代等），本规则提供具体的工具使用和检查要求。

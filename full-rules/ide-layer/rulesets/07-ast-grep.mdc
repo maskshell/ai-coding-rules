@@ -1,0 +1,95 @@
+---
+description: ast-grep 使用规范
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+- ai-tools
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# ast-grep 使用规范
+
+## 核心原则
+
+### 优先使用 ast-grep
+
+当需要进行代码库级别的重构、搜索或模式替换时，**必须优先使用 ast-grep**（命令：`sg`），而非标准正则表达式或文本搜索。
+
+**原因**：ast-grep 基于抽象语法树，能准确理解代码结构，避免正则表达式的误匹配问题。
+
+## 工作流程
+
+### 1. 分析请求
+
+在建议代码变更前，先分析请求是否涉及结构模式：
+
+- 替换所有 try-catch 块
+- 查找嵌套在循环中的函数调用
+- 查找特定模式的函数定义
+- 批量重构 API 调用
+
+### 2. 构造命令
+
+生成具体的 `sg` CLI 命令：
+
+- 使用 `sg scan` 先查找匹配项
+- 使用 `sg run --pattern '...' --rewrite '...'` 进行重构
+- 始终验证模式语法（见语法参考）
+
+### 3. 验证模式
+
+在运行前，解释模式匹配的内容（`$A`、`$$$`），确保理解作用范围。
+
+## 语法参考
+
+### 基本语法
+
+- **单节点**：`$A`、`$VAR`（匹配一个 AST 节点，如变量、字面量）
+- **多节点**：`$$$`、`$$$ARGS`（匹配零个或多个节点，如参数列表、函数体）
+
+### 使用规则
+
+复制要查找的代码，将变化部分替换为 `$A`，将列表/函数体替换为 `$$$`。
+
+**示例**：
+
+```bash
+# ❌ 错误：使用正则风格
+console.log(...)
+
+# ✅ 正确：使用 ast-grep 风格
+console.log($$$ARGS)
+```
+
+## 常见任务
+
+### 查找用法
+
+```bash
+# 查找函数 X 的所有调用
+sg scan --pattern 'X($$$)'
+```
+
+### 代码验证
+
+```bash
+# 验证函数命名规范
+sg scan --filter='kind(function_definition)' --filter='regex("^[a-z_]+")'
+
+# 检查未使用的导入
+sg scan --pattern='import * from "$A";' --filter='not referenced($A)'
+```
+
+### 批量重构
+
+```bash
+# 替换所有 console.log 为 logger.info
+sg run --pattern 'console.log($$$ARGS)' --rewrite 'logger.info($$$ARGS)'
+```
+
+## 与现有规则的关系
+
+本规则是对 `04-ai-behavior.mdc` 中 ast-grep 简要介绍的详细补充。当需要进行结构化的代码操作时，遵循本规则；日常代码生成验证，可参考 `04-ai-behavior.mdc` 中的简要说明。

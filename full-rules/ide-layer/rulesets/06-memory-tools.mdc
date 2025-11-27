@@ -1,0 +1,141 @@
+---
+description: 记忆工具使用规范
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+- ai-tools
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# 记忆工具使用规范
+
+## 核心原则
+
+### 强制使用规则
+
+在响应任何用户请求前，必须先评估是否需要搜索记忆：
+
+- 当请求涉及外部系统或集成（如"集成 X 系统"）
+- 当请求引用之前的工作或对话（不在当前上下文中）
+- 当请求涉及项目特定概念（当前查询未解释）
+- 当请求是之前任务的延续
+
+**原则**：不确定时，优先搜索记忆。宁可多搜索，不可遗漏关键上下文。
+
+### 关键触发短语
+
+以下短语出现时，必须立即使用记忆工具的搜索功能：
+
+- "我们需要集成..."
+- "我之前添加了 X，现在需要..."
+- 提及特定系统但缺少上下文
+- 任何提到最近讨论或继续之前工作的请求
+
+**注意**：具体工具名称取决于使用的 MCP Server 实现（如 `search_keys`、`search_memory`、`retrieve_memory` 等）。
+
+## 记忆操作
+
+### 搜索记忆
+
+**何时搜索**：
+
+- 任何可能缺少上下文的情况
+- 用户引用之前的工作、决策或信息
+- 构建与缺失上下文相关的查询
+
+**如何搜索**：
+
+- 使用记忆工具的语义搜索功能（提供主题相关查询）
+- 使用记忆工具的直接搜索功能
+- 分析返回结果，提取相关上下文
+
+**工具名称说明**：
+
+不同 MCP Server 实现使用不同的工具接口：
+
+1. **简单存储模型**（如参考项目实现）：
+   - `search_keys`、`search_memory` - 搜索记忆
+   - `store_memory` - 存储记忆
+
+2. **官方 Knowledge Graph Memory Server**（`@modelcontextprotocol/server-memory`）：
+   - `search_nodes` - 搜索节点（基于实体名称、类型、观察值）
+   - `read_graph` - 读取整个知识图谱
+   - `create_entities`、`add_observations` - 创建实体和添加观察值来存储信息
+   - 详见：[官方文档](https://github.com/modelcontextprotocol/servers/blob/main/src/memory/README.md)
+
+3. **其他实现**（如 MCP Memory Service）：
+   - `retrieve_memory` - 语义搜索
+   - `store_memory` - 存储记忆
+
+根据实际使用的 Memory Server 实现，使用对应的工具名称和操作方式。
+
+### 存储记忆
+
+**何时存储**：
+
+- 响应包含新信息或决策后
+- 存储前先检查现有记忆，避免冗余
+- 仅存储新事实、决策或上下文
+- 如果响应只是重复之前存储的信息，跳过存储
+
+**工具名称说明**：
+
+不同实现使用不同的存储方式：
+
+1. **简单存储模型**：
+   - `store_memory` 或 `create_memory` - 直接存储记忆内容
+
+2. **官方 Knowledge Graph Memory Server**：
+   - `create_entities` - 创建实体（如项目、人员、决策等）
+   - `add_observations` - 向实体添加观察值（具体信息）
+   - `create_relations` - 建立实体之间的关系
+   - 需要将信息建模为实体-关系-观察值结构
+
+3. **其他实现**：
+   - 根据具体实现的文档使用对应工具
+
+根据实际使用的 Memory Server 实现，使用对应的工具名称和参数格式。
+
+**存储内容**：
+
+- ✅ 存储摘要和关键点，而非完整对话
+- ✅ 提取重要事实、偏好和决策
+- ✅ 包含具体细节（名称、日期、数字、决策）
+- ❌ 不存储完整对话的逐字记录
+- ❌ 不存储冗余信息
+- ❌ 不存储过于模糊的内容
+
+### 命名约定
+
+**项目命名**（project_name）：
+
+- `user-preferences` - 用户偏好和设置
+- `user-tasks` - 特定任务或项目
+- `user-decisions` - 重要决策
+
+**会话命名**（session_name）：
+
+- 使用稳定的唯一标识符（如用户ID）
+- 或使用基于主题的标识符（如 "website-redesign"）
+
+**示例**：
+
+```
+project_name: "user-tasks"
+session_name: "api-integration"
+content: "用户决定使用 REST API 而非 GraphQL，因为团队更熟悉 REST"
+```
+
+## 工作流程
+
+1. 用户提出请求
+2. **评估**：是否需要额外上下文？
+3. **搜索**：如不确定，搜索记忆获取相关上下文
+4. 处理用户请求（使用可用上下文）
+5. 生成响应
+6. **评估**：响应是否包含新信息？
+7. **存储**：如包含新信息，存储关键点
+8. 返回响应给用户

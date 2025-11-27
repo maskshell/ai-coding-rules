@@ -1,0 +1,40 @@
+---
+description: ast-grep 使用规范（精简版）
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+- ai-tools
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# ast-grep 使用规范（精简版）
+
+## 核心原则
+
+代码库级别的重构、搜索或模式替换时，**必须优先使用 ast-grep**（命令：`sg`），而非正则表达式。
+
+## 工作流程
+
+1. **分析**：请求是否涉及结构模式
+2. **构造命令**：使用 `sg scan` 查找，`sg run` 重构
+3. **验证**：解释模式匹配内容（`$A`、`$$$`）
+
+## 语法
+
+- **单节点**：`$A`、`$VAR`（匹配一个 AST 节点）
+- **多节点**：`$$$`、`$$$ARGS`（匹配零个或多个节点）
+
+**规则**：复制要查找的代码，变化部分用 `$A`，列表/函数体用 `$$$`。
+
+## 常见任务
+
+```bash
+# 查找函数调用
+sg scan --pattern 'X($$$)'
+
+# 批量重构
+sg run --pattern 'console.log($$$ARGS)' --rewrite 'logger.info($$$ARGS)'
+```

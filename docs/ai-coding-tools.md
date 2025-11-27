@@ -7,7 +7,7 @@
 ### 快速决策表
 
 | 工具 | 推荐度 | 学习成本 | 核心价值 | 适用场景 |
-|------|--------|----------|----------|----------|
+| ---- | ------ | -------- | -------- | -------- |
 | **Context7** | ⭐⭐⭐⭐⭐ | 低 | 实时准确文档查询 | 所有项目 |
 | **ast-grep** | ⭐⭐⭐⭐☆ | 中等 | 代码验证与重构 | 中大型项目 |
 | **Knowledge Graph Memory Server** | ⭐⭐⭐★☆ | 高 | 跨会话记忆保持 | 长期项目 |
@@ -19,11 +19,11 @@
 
 ### 1. Context7 MCP Server ⭐⭐⭐⭐⭐
 
-#### 功能简介
+#### Context7 - 功能简介
 
 Context7 是一个专为 AI 编程助手设计的 MCP Server，提供实时、版本特定的 API 文档和代码示例，解决 AI 使用过时文档的问题。
 
-#### 核心价值
+#### Context7 - 核心价值
 
 - **消除 AI 幻觉**：提供准确的最新 API 文档
 - **版本精确匹配**：避免 API 版本不兼容
@@ -32,7 +32,7 @@ Context7 是一个专为 AI 编程助手设计的 MCP Server，提供实时、�
 
 #### 在 AI 编码中的应用
 
-##### 场景 1：使用最新 API
+**场景 1：使用最新 API**
 
 ```bash
 # 不使用 Context7
@@ -42,7 +42,7 @@ AI 可能使用过时的 React Query API，导致代码无法运行
 AI 自动查询 React Query v5 的最新文档，使用正确的 API
 ```
 
-##### 场景 2：框架升级
+**场景 2：框架升级**
 
 ```bash
 # 从 Vue 2 升级到 Vue 3
@@ -51,33 +51,33 @@ use context7: "compare Vue 2 and Vue 3 composition API differences"
 # AI 获取准确的迁移指南和代码示例
 ```
 
-#### 系统要求
+#### Context7 - 系统要求
 
 - **Node.js**: 版本 ≥ v18.0.0
 - **操作系统**: 支持所有 Node.js 兼容的操作系统（Windows、macOS、Linux）
 - **MCP 客户端**: Cursor、Claude Code、VS Code、Windsurf、Augment Code、Kilo Code、Amp Code、Roo Code、Google Antigravity 等
 
-#### 安装与配置
+#### Context7 - 安装与配置
 
-##### 方式 1：通过 npx 直接运行（推荐）
+**方式 1：通过 npx 直接运行（推荐）**
 
 ```bash
 npx -y @upstash/context7-mcp --api-key YOUR_API_KEY
 ```
 
-##### 方式 2：通过 Smithery 安装
+**方式 2：通过 Smithery 安装**
 
 ```bash
 npx -y @smithery/cli@latest install @upstash/context7-mcp --client claude --key <YOUR_SMITHERY_KEY>
 ```
 
-##### 获取 API Key
+**获取 API Key**
 
 1. 访问 [context7.com/dashboard](https://context7.com/dashboard)
 2. 使用 GitHub 账号登录
 3. 创建新的 API Key
 
-##### MCP Server 配置
+**MCP Server 配置**
 
 在 Claude Code 中配置：
 
@@ -100,9 +100,9 @@ claude mcp add --transport http https://mcp.context7.com/mcp --header "CONTEXT7_
 }
 ```
 
-##### 客户端特定配置
+**客户端特定配置**
 
-###### Cursor
+**Cursor**
 
 添加到 `~/.cursor/mcp.json`
 
@@ -119,18 +119,18 @@ claude mcp add --transport http https://mcp.context7.com/mcp --header "CONTEXT7_
 }
 ```
 
-###### Claude Code 配置命令
+**Claude Code 配置命令**
 
 ```bash
 claude mcp add context7 https://mcp.context7.com/mcp \
   --env CONTEXT7_API_KEY=YOUR_API_KEY
 ```
 
-###### VS Code
+**VS Code**
 
 在设置中添加 MCP 服务器配置（使用 Cline 插件）
 
-#### 在提示中使用
+#### Context7 - 在提示中使用
 
 在提示词中添加 `use context7`：
 
@@ -144,7 +144,7 @@ use context7: "How to use React Query v5 useQuery with TypeScript?"
 use context7: "帮我写一个 React Query v5 的 hook，用于获取用户数据"
 ```
 
-#### 推荐用法
+#### Context7 - 推荐用法
 
 在提示词中添加 `use context7`：
 
@@ -152,7 +152,7 @@ use context7: "帮我写一个 React Query v5 的 hook，用于获取用户数�
 use context7: "帮我写一个 React Query v5 的 hook，用于获取用户数据，包括 loading 和 error 状态"
 ```
 
-#### 成本与效果
+#### Context7 - 成本与效果
 
 - **ROI**：极高（准确代码 vs 调试错误）
 - **学习成本**：极低（直接在提示词中使用）
@@ -162,18 +162,18 @@ use context7: "帮我写一个 React Query v5 的 hook，用于获取用户数�
 
 ### 2. ast-grep ⭐⭐⭐⭐☆
 
-#### 功能简介
+#### ast-grep - 功能简介
 
 ast-grep 是一个基于抽象语法树（AST）的跨语言代码搜索、lint 和重写工具，支持 40+ 种编程语言。它将传统的 grep/sed 概念提升到语法树层面，避免了文本搜索的局限性。
 
-#### 核心价值
+#### ast-grep - 核心价值
 
 - **精准代码搜索**：避免正则表达式带来的误匹配
 - **批量代码重构**：安全地进行大规模代码变更
 - **自定义 lint 规则**：创建项目特定的代码规范检查
 - **代码验证**：验证 AI 生成的代码是否符合规范
 
-#### 在 AI 编码中的应用
+#### ast-grep - 在 AI 编码中的应用
 
 **场景 1：验证 AI 生成的代码**
 
@@ -204,7 +204,7 @@ rule:
 sg run -p 'export default {methods: {$F: $_}}' -r 'const $F = () => {...}'
 ```
 
-#### 安装与配置
+#### ast-grep - 安装与配置
 
 ```bash
 # macOS
@@ -216,7 +216,7 @@ npm i -g @ast-grep/cli
 cargo install ast-grep --locked
 ```
 
-#### 在 Claude Code 中的集成
+#### ast-grep - 在 Claude Code 中的集成
 
 在 `.cursor/rules.md` 中添加：
 
@@ -227,13 +227,13 @@ cargo install ast-grep --locked
 - 批量重构时使用 ast-grep 确保准确性
 ```
 
-#### 推荐用法
+#### ast-grep - 推荐用法
 
 1. **实时验证**：配置 VS Code 插件，在保存时自动检查
 2. **CI/CD 集成**：在提交前自动验证代码质量
 3. **AI 代码后处理**：AI 生成代码后立即运行 ast-grep 检查
 
-#### 成本与效果
+#### ast-grep - 成本与效果
 
 - **ROI**：高（减少调试时间和错误）
 - **学习成本**：中等（需要理解 AST 概念和规则语法）
@@ -243,18 +243,18 @@ cargo install ast-grep --locked
 
 ### 3. Knowledge Graph Memory Server ⭐⭐⭐★☆
 
-#### 功能简介
+#### Memory Server - 功能简介
 
 基于知识图谱的 MCP Server，为 AI 提供持久的跨会话记忆能力，支持实体-关系-观察值三元组存储和复杂查询。
 
-#### 核心价值
+#### Memory Server - 核心价值
 
 - **跨会话记忆**：AI 记住之前的对话和项目上下文
 - **知识积累**：项目经验可以被持续积累和复用
 - **团队协作**：共享项目知识图谱
 - **上下文连续性**：避免重复解释相同概念
 
-#### 在 AI 编码中的应用
+#### Memory Server - 在 AI 编码中的应用
 
 **场景 1：项目架构记忆**
 
@@ -280,7 +280,7 @@ User: "token 刷新又失败了"
 AI: "之前遇到过类似问题（修复 ID: #123），是否检查了 token 过期时间配置？"
 ```
 
-#### 安装与配置
+#### Memory Server - 安装与配置
 
 1. 安装依赖：
 
@@ -295,23 +295,82 @@ npm install @modelcontextprotocol/server-memory
   "mcpServers": {
     "memory": {
       "command": "npx",
-      "args": ["@modelcontextprotocol/server-memory"],
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {
-        "MEMORY_FILE_PATH": "./memory.json"
+        "MEMORY_FILE_PATH": "./memory.jsonl"
       }
     }
   }
 }
 ```
 
-#### 推荐用法
+**环境变量**：
+
+- `MEMORY_FILE_PATH`：记忆存储文件路径（默认：`memory.jsonl`）
+
+#### Memory Server - 工具接口
+
+官方实现基于知识图谱模型，提供以下工具：
+
+**实体管理**：
+
+- `create_entities` - 创建实体（项目、人员、事件等）
+- `delete_entities` - 删除实体
+
+**关系管理**：
+
+- `create_relations` - 创建实体之间的关系
+- `delete_relations` - 删除关系
+
+**观察值管理**：
+
+- `add_observations` - 向实体添加观察值（具体信息）
+- `delete_observations` - 删除观察值
+
+**查询操作**：
+
+- `read_graph` - 读取整个知识图谱
+- `search_nodes` - 搜索节点（基于实体名称、类型、观察值内容）
+- `open_nodes` - 打开特定节点
+
+**核心概念**：
+
+- **实体（Entities）**：知识图谱中的节点，有唯一名称、类型和观察值列表
+- **关系（Relations）**：实体之间的有向连接
+- **观察值（Observations）**：关于实体的离散信息片段
+
+**使用示例**：
+
+```json
+// 创建项目实体
+{
+  "tool": "create_entities",
+  "entities": [
+    {
+      "name": "my-project",
+      "entityType": "project",
+      "observations": ["使用微前端架构", "主应用是 host-app"]
+    }
+  ]
+}
+
+// 搜索相关信息
+{
+  "tool": "search_nodes",
+  "query": "项目架构"
+}
+```
+
+**详细文档**：https://github.com/modelcontextprotocol/servers/blob/main/src/memory/README.md
+
+#### Memory Server - 推荐用法
 
 1. **项目初始化时**：定义核心实体（用户、订单、产品等）和关系
 2. **每日开发中**：自动记录重要决策和代码变更
 3. **Code Review**：记录 review 意见和改进方案
 4. **周报生成**：基于知识图谱自动生成工作汇报
 
-#### 成本与效果
+#### Memory Server - 成本与效果
 
 - **ROI**：高（适合长期项目）
 - **学习成本**：高（需要设计知识图谱模型）
@@ -321,18 +380,18 @@ npm install @modelcontextprotocol/server-memory
 
 ### 4. Skill 模式 ⭐⭐★☆☆
 
-#### 功能简介
+#### Skill 模式 - 功能简介
 
 Claude Code 的 Skill 模式提供可复用的程序化知识，支持动态加载和智能匹配，让 AI 能够完成标准化的工作流程。
 
-#### 核心价值
+#### Skill 模式 - 核心价值
 
 - **工作流程标准化**：封装常见的开发任务
 - **上下文管理**：减少 token 浪费
 - **知识复用**：避免重复描述相同任务
 - **质量保证**：确保任务执行的一致性
 
-#### 在 AI 编码中的应用
+#### Skill 模式 - 在 AI 编码中的应用
 
 **场景 1：标准化的代码审查**
 
@@ -373,13 +432,13 @@ export default {
 // 使用：/skill init-react-app
 ```
 
-#### 使用限制
+#### Skill 模式 - 使用限制
 
 - **配额限制**：每个账号有一定数量的 skill 使用配额
 - **生态成熟度**：目前可用的 skill 还比较少
 - **开发成本**：需要学习 skill 的开发模式
 
-#### 成本与效果
+#### Skill 模式 - 成本与效果
 
 - **ROI**：中等（适合高度标准化的团队）
 - **学习成本**：高（需要理解 skill 架构）
@@ -481,7 +540,7 @@ commit & push
 ## 总结
 
 | 工具 | 核心价值 | 优先级 | 开始时间 |
-|------|----------|--------|----------|
+| ---- | -------- | ------ | -------- |
 | **Context7** | 代码准确性 | P0 | 立即 |
 | **ast-grep** | 代码质量 | P1 | 2-4 周 |
 | **Knowledge Graph** | 知识管理 | P2 | 1-2 月 |

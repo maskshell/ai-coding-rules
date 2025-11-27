@@ -1,0 +1,39 @@
+---
+description: 开发工作流规范（精简版）
+globs:
+- '**/*'
+alwaysApply: true
+tags:
+- general
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# 开发工作流规范（精简版）
+
+## 文件格式化
+
+- 优先使用项目标准工具（`ruff format`、`prettier`），而非 AI 格式化
+- 仅在本地工具不可用时使用 AI 格式化
+
+## Pre-commit 检查
+
+提交前必须运行（与 CI 保持一致）：
+
+```bash
+# 格式化检查
+ruff format --check .
+ruff format .  # 如失败，修复后再次检查
+
+# 代码检查
+ruff check .
+ruff check . --fix  # 如失败，修复后再次检查
+
+# YAML 检查（如修改了 YAML）
+yamllint . --config-file .yamllint || true
+```
+
+## 工具使用
+
+- 优先调用本地工具（Ruff、Prettier、ESLint）
+- 使用工具命令，避免在对话中生成格式化代码（减少 token 消耗）
