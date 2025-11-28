@@ -155,16 +155,19 @@ class RuleLinter:
 
         # 精简版规则不强制要求代码示例
         is_concise = file_path and ".concise-rules" in str(file_path)
+        # IDE 层规则是抽象原则，不强制要求代码示例
+        is_ide_layer = file_path and "ide-layer/rulesets" in str(file_path)
 
         if len(code_blocks) == 0:
-            if not is_concise:
+            # 精简版和 IDE 层规则不强制要求代码示例
+            if not is_concise and not is_ide_layer:
                 issues.append(
                     {
                         "type": "error",
                         "message": "缺少代码示例（至少需要 1 个）",
                     }
                 )
-        elif len(code_blocks) < 2 and not is_concise:
+        elif len(code_blocks) < 2 and not is_concise and not is_ide_layer:
             issues.append(
                 {
                     "type": "warning",
@@ -172,8 +175,8 @@ class RuleLinter:
                 }
             )
 
-        # 检查 Good/Bad 标注（仅对完整版规则）
-        if not is_concise:
+        # 检查 Good/Bad 标注（仅对完整版项目层规则）
+        if not is_concise and not is_ide_layer:
             good_bad_count = len(GOOD_BAD_PATTERN.findall(content))
             if good_bad_count == 0 and len(code_blocks) > 0:
                 issues.append(
