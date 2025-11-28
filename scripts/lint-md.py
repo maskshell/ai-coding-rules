@@ -30,6 +30,9 @@ RULE_FILE_KEYWORDS = ["rulesets", "rules", "coderules"]
 FILENAME_PATTERN = re.compile(r"^\d{2}-[a-z0-9-]+\.md$")
 HEADER_PATTERN = re.compile(r"^(#{1,6})\s+", re.MULTILINE)
 CODE_BLOCK_PATTERN = re.compile(r"```(\w+)?\n")
+# 匹配完整的代码块（包括 ``` 和 `````，用于移除代码块内容）
+# 匹配 ``` 或 ````` 开头的代码块，直到对应的结束标记
+FULL_CODE_BLOCK_PATTERN = re.compile(r"```+[^\n]*\n.*?```+", re.DOTALL)
 
 
 class MarkdownLintNotFoundError(Exception):
@@ -201,6 +204,20 @@ def check_filename_format(file: Path) -> str | None:
     return None
 
 
+def remove_code_blocks(content: str) -> str:
+    """
+    移除所有代码块内容，避免代码块中的标题被误判
+
+    Args:
+        content: 文件内容
+
+    Returns:
+        移除代码块后的内容
+    """
+    # 移除所有代码块（包括 ``` 和 `````）
+    return FULL_CODE_BLOCK_PATTERN.sub("", content)
+
+
 def check_header_levels(content: str) -> list[str]:
     """
     检查标题层级（不超过 4 级）
@@ -212,7 +229,9 @@ def check_header_levels(content: str) -> list[str]:
         错误信息列表
     """
     errors: list[str] = []
-    headers = HEADER_PATTERN.findall(content)
+    # 先移除代码块内容，避免代码块中的标题被误判
+    content_without_code = remove_code_blocks(content)
+    headers = HEADER_PATTERN.findall(content_without_code)
 
     for header in headers:
         level = len(header)
@@ -233,7 +252,9 @@ def check_header_skipping(content: str) -> list[str]:
         错误信息列表
     """
     errors: list[str] = []
-    headers = HEADER_PATTERN.findall(content)
+    # 先移除代码块内容，避免代码块中的标题被误判
+    content_without_code = remove_code_blocks(content)
+    headers = HEADER_PATTERN.findall(content_without_code)
     header_levels = [len(h) for h in headers]
 
     for i in range(1, len(header_levels)):
