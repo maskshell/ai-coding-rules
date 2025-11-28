@@ -285,6 +285,10 @@ def check_project_specific_rules(file: Path) -> list[str]:
     """
     errors: list[str] = []
 
+    # 跳过 docs 目录中的文件（这些是文档文件，不是规则文件）
+    if "docs" in file.parts:
+        return errors
+
     try:
         content = read_file_content(file)
     except FileReadError as e:

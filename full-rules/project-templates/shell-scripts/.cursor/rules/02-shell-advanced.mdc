@@ -1,0 +1,356 @@
+---
+description: Shell 脚本高级规范
+globs:
+- '**/*.sh'
+- '**/*.bash'
+alwaysApply: false
+tags:
+- shell
+- bash
+- advanced
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Shell 脚本高级规范
+
+## 错误处理
+
+### set 选项组合
+
+- 在脚本开头使用 `set -euo pipefail`
+- `set -e`：命令失败时立即退出
+- `set -u`：使用未定义变量时报错
+- `set -o pipefail`：管道中任何命令失败都返回失败状态
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 如果任何命令失败，脚本会立即退出
+```
+
+### 临时禁用错误退出
+
+- 对于可能失败但需要继续执行的命令，使用 `|| true` 或 `set +e` 临时禁用
+
+```bash
+# Good: 使用 || true 允许命令失败
+grep -q "pattern" file.txt || true
+
+# Good: 临时禁用错误退出
+set +e
+some_command_that_might_fail
+exit_code=$?
+set -e
+
+if [[ ${exit_code} -ne 0 ]]; then
+  echo "命令执行失败，但继续执行"
+fi
+```
+
+### trap 使用
+
+- 使用 `trap` 处理脚本退出、错误和信号
+- 清理临时文件、恢复状态、记录错误
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 清理函数
+cleanup() {
+  local exit_code=$?
+  if [[ -f "${TEMP_FILE:-}" ]]; then
+    rm -f "${TEMP_FILE}"
+  fi
+  if [[ ${exit_code} -ne 0 ]]; then
+    echo "脚本执行失败，退出码: ${exit_code}" >&2
+  fi
+  exit ${exit_code}
+}
+
+# 注册清理函数
+trap cleanup EXIT ERR
+
+# 使用临时文件
+TEMP_FILE=$(mktemp)
+# ... 使用临时文件 ...
+```
+
+### 错误退出码
+
+- 使用有意义的退出码
+- 0：成功
+- 1：一般错误
+- 2：用法错误
+- 其他：特定错误类型
+
+```bash
+# Good
+if [[ ! -f "${config_file}" ]]; then
+  echo "错误: 配置文件不存在: ${config_file}" >&2
+  exit 1
+fi
+
+if [[ $# -lt 2 ]]; then
+  echo "用法: $0 <arg1> <arg2>" >&2
+  exit 2
+fi
+```
+
+## 调试和日志
+
+### 调试模式
+
+- 使用 `set -x` 启用调试模式
+- 通过环境变量控制调试输出
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 通过环境变量控制调试
+if [[ "${DEBUG:-false}" == "true" ]]; then
+  set -x
+fi
+
+# 或者使用命令行参数
+if [[ "${1:-}" == "--debug" ]]; then
+  set -x
+  shift
+fi
+```
+
+### 日志函数
+
+- 实现统一的日志函数（info, warn, error）
+- 日志输出到标准错误，避免影响管道操作
+- 支持日志级别控制
+
+```bash
+# 日志函数
+log_info() {
+  echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') $*" >&2
+}
+
+log_warn() {
+  echo "[WARN] $(date '+%Y-%m-%d %H:%M:%S') $*" >&2
+}
+
+log_error() {
+  echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') $*" >&2
+}
+
+# 使用示例
+log_info "开始部署应用"
+log_warn "配置文件未找到，使用默认配置"
+log_error "部署失败: ${error_message}"
+```
+
+### 日志级别控制
+
+- 通过环境变量控制日志级别
+- 只输出指定级别及以上的日志
+
+```bash
+readonly LOG_LEVEL="${LOG_LEVEL:-INFO}"
+
+log_info() {
+  if [[ "${LOG_LEVEL}" == "DEBUG" ]] || [[ "${LOG_LEVEL}" == "INFO" ]]; then
+    echo "[INFO] $*" >&2
+  fi
+}
+
+log_debug() {
+  if [[ "${LOG_LEVEL}" == "DEBUG" ]]; then
+    echo "[DEBUG] $*" >&2
+  fi
+}
+```
+
+## 性能优化
+
+### 避免不必要的子进程
+
+- 使用 Bash 内置命令而非外部命令
+- 减少命令调用次数
+
+```bash
+# Good: 使用内置命令
+local count=${#array[@]}
+
+# Bad: 使用外部命令
+local count=$(echo "${array[@]}" | wc -w)
+
+# Good: 批量操作
+for file in *.txt; do
+  process_file "${file}"
+done
+
+# Bad: 多次调用外部命令
+for file in *.txt; do
+  local size=$(stat -f%z "${file}")  # macOS
+  # 或
+  local size=$(stat -c%s "${file}")  # Linux
+done
+```
+
+### 使用内置命令
+
+- 优先使用 Bash 内置功能
+- 字符串操作使用参数扩展而非外部工具
+
+```bash
+# Good: 使用参数扩展
+local basename="${file##*/}"
+local dirname="${file%/*}"
+local extension="${file##*.}"
+
+# Bad: 使用外部命令
+local basename=$(basename "${file}")
+local dirname=$(dirname "${file}")
+local extension=$(echo "${file}" | sed 's/.*\.//')
+```
+
+### 批量操作优化
+
+- 使用数组批量处理
+- 减少循环中的外部命令调用
+
+```bash
+# Good: 批量处理
+readarray -t files < <(find . -name "*.txt")
+for file in "${files[@]}"; do
+  process_file "${file}"
+done
+
+# Bad: 在循环中调用 find
+for file in $(find . -name "*.txt"); do
+  process_file "${file}"
+done
+```
+
+## 安全规范
+
+### 输入验证
+
+- 验证所有用户输入和外部数据
+- 检查文件存在性、权限、格式
+
+```bash
+# Good: 验证输入
+if [[ $# -lt 1 ]]; then
+  echo "错误: 缺少参数" >&2
+  exit 1
+fi
+
+readonly input_file="$1"
+
+if [[ ! -f "${input_file}" ]]; then
+  echo "错误: 文件不存在: ${input_file}" >&2
+  exit 1
+fi
+
+if [[ ! -r "${input_file}" ]]; then
+  echo "错误: 文件不可读: ${input_file}" >&2
+  exit 1
+fi
+```
+
+### 路径处理
+
+- 使用绝对路径或规范化路径
+- 防止路径注入攻击
+- 验证路径在允许范围内
+
+```bash
+# Good: 规范化路径
+readonly script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly config_file="${script_dir}/config.conf"
+
+# Good: 验证路径
+readonly user_path="$1"
+readonly base_dir="/opt/app"
+
+if [[ "${user_path}" != "${base_dir}"/* ]]; then
+  echo "错误: 路径不在允许范围内" >&2
+  exit 1
+fi
+
+# 使用 realpath 规范化路径（如果可用）
+if command -v realpath >/dev/null 2>&1; then
+  readonly safe_path=$(realpath "${user_path}")
+else
+  readonly safe_path=$(cd "${user_path}" && pwd)
+fi
+```
+
+### 敏感信息处理
+
+- 不在日志中输出敏感信息
+- 使用环境变量存储敏感配置
+- 清理包含敏感信息的临时文件
+
+```bash
+# Good: 使用环境变量
+readonly api_key="${API_KEY:-}"
+
+if [[ -z "${api_key}" ]]; then
+  echo "错误: API_KEY 环境变量未设置" >&2
+  exit 1
+fi
+
+# Good: 清理敏感信息
+cleanup() {
+  if [[ -f "${temp_file:-}" ]]; then
+    # 安全删除（覆盖后删除）
+    if command -v shred >/dev/null 2>&1; then
+      shred -u "${temp_file}"
+    else
+      rm -f "${temp_file}"
+    fi
+  fi
+}
+
+# Bad: 在日志中输出敏感信息
+log_info "API Key: ${api_key}"  # 不要这样做
+```
+
+### 命令注入防护
+
+- 避免直接执行用户输入
+- 使用参数数组而非字符串拼接
+
+```bash
+# Good: 使用参数数组
+readonly cmd=("git" "log" "--format=%H" "${user_input}")
+"${cmd[@]}"
+
+# Bad: 直接执行用户输入
+eval "git log --format=%H ${user_input}"  # 危险！
+
+# Bad: 字符串拼接
+git log --format=%H "${user_input}"  # 如果 user_input 包含特殊字符可能有问题
+```
+
+## 开发流程
+
+### 脚本开发步骤
+
+1. **先实现基本功能**：让脚本能正常工作，完成核心需求
+2. **添加错误处理**：使用 `set -euo pipefail`，添加输入验证和错误检查
+3. **添加日志和调试**：实现日志函数，支持调试模式
+4. **优化性能**：减少子进程调用，使用内置命令
+5. **加强安全**：验证输入，处理路径，保护敏感信息
+6. **编写测试**：手动测试各种场景，验证边界情况
+7. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后立即手动测试验证
+- 保持函数的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小
+- 关注安全性和性能，但不过度优化

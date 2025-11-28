@@ -1,0 +1,289 @@
+---
+description: Shell 脚本基础规范
+globs:
+- '**/*.sh'
+- '**/*.bash'
+alwaysApply: false
+tags:
+- shell
+- bash
+- scripting
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Shell 脚本基础规范
+
+## Shebang 和基础设置
+
+### Shebang 使用
+
+- 使用 `#!/usr/bin/env bash` 而非 `#!/bin/bash`
+- 理由：`/usr/bin/env` 会查找 PATH 中的 bash，提高可移植性
+
+```bash
+#!/usr/bin/env bash
+```
+
+### 脚本头部设置
+
+- 在脚本开头使用 `set -euo pipefail`
+- `set -e`：遇到错误立即退出
+- `set -u`：使用未定义变量时报错
+- `set -o pipefail`：管道中任何命令失败都返回失败状态
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+```
+
+### 脚本头部注释
+
+- 在 Shebang 后添加脚本说明注释
+- 包含脚本用途、作者、版本等信息
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 脚本用途：部署应用到生产环境
+# 作者：Your Name
+# 版本：1.0.0
+# 用法：./deploy-app.sh [environment]
+```
+
+## 命名规范
+
+### 文件名
+
+- 使用 kebab-case（短横线分隔）
+- 文件名清晰描述脚本功能
+- 以 `.sh` 或 `.bash` 结尾
+
+```bash
+# Good
+deploy-app.sh
+backup-database.sh
+setup-environment.sh
+
+# Bad
+deployApp.sh          # 使用 camelCase
+deploy_app.sh         # 使用下划线
+DeployApp.sh          # 使用 PascalCase
+```
+
+### 函数名
+
+- 使用 snake_case（下划线分隔）
+- 函数名清晰表达功能
+
+```bash
+# Good
+deploy_application() {
+  # ...
+}
+
+backup_database() {
+  # ...
+}
+
+# Bad
+deployApplication() {  # 使用 camelCase
+  # ...
+}
+```
+
+### 变量名
+
+- 常量使用 UPPER_SNAKE_CASE
+- 普通变量使用 snake_case
+- 使用 `readonly` 声明常量
+
+```bash
+# Good
+readonly MAX_RETRIES=3
+readonly CONFIG_FILE="/etc/app.conf"
+
+local user_name="admin"
+local retry_count=0
+
+# Bad
+maxRetries=3           # 常量应使用大写
+userName="admin"       # 使用 camelCase
+```
+
+## 代码组织
+
+### 脚本结构模板
+
+- 按以下顺序组织脚本内容：
+  1. Shebang 和设置
+  2. 常量定义
+  3. 函数定义
+  4. 主逻辑
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 常量定义
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly LOG_FILE="${SCRIPT_DIR}/app.log"
+
+# 函数定义
+log_info() {
+  echo "[INFO] $*" | tee -a "${LOG_FILE}"
+}
+
+deploy_application() {
+  log_info "开始部署应用"
+  # ...
+}
+
+# 主逻辑
+main() {
+  deploy_application
+}
+
+main "$@"
+```
+
+### 函数定义顺序
+
+- 工具函数在前，业务函数在后
+- 主函数放在最后
+- 相关函数放在一起
+
+```bash
+# 工具函数
+log_info() { ... }
+log_error() { ... }
+
+# 业务函数
+deploy_application() { ... }
+backup_database() { ... }
+
+# 主函数
+main() { ... }
+```
+
+## 变量和参数
+
+### 变量引用
+
+- 使用 `${variable}` 而非 `$variable`
+- 理由：更清晰，避免与后续字符混淆
+
+```bash
+# Good
+echo "User: ${user_name}"
+echo "Count: ${count}"
+
+# Bad
+echo "User: $user_name"  # 可能被解析为 $user_name 变量
+echo "Count: $count"      # 可能被解析为 $count 变量
+```
+
+### 参数处理
+
+- 使用 `$1`, `$2` 等访问位置参数
+- 使用 `$@` 获取所有参数（保持引号）
+- 使用 `$*` 获取所有参数（合并为单个字符串）
+- 使用 `$#` 获取参数个数
+
+```bash
+# Good
+script_name="$1"
+environment="$2"
+
+if [[ $# -lt 2 ]]; then
+  echo "用法: $0 <script_name> <environment>"
+  exit 1
+fi
+
+# 遍历所有参数
+for arg in "$@"; do
+  echo "参数: ${arg}"
+done
+```
+
+### 常量声明
+
+- 使用 `readonly` 声明常量
+- 常量名使用 UPPER_SNAKE_CASE
+
+```bash
+# Good
+readonly MAX_RETRIES=3
+readonly DEFAULT_PORT=8080
+
+# Bad
+MAX_RETRIES=3          # 未使用 readonly
+default_port=8080      # 常量应使用大写
+```
+
+## 字符串处理
+
+### 引号使用
+
+- 单引号：字面量字符串，不进行变量替换
+- 双引号：允许变量替换和命令替换
+- 无引号：仅在简单场景使用（不推荐）
+
+```bash
+# Good
+readonly MESSAGE='Hello World'
+readonly GREETING="Hello, ${user_name}!"
+readonly TIMESTAMP="$(date +%s)"
+
+# Bad
+readonly MESSAGE=Hello World        # 包含空格需要引号
+readonly GREETING='Hello, ${user_name}!'  # 单引号不进行变量替换
+```
+
+### 字符串拼接
+
+- 直接拼接，无需特殊操作符
+- 使用双引号包含变量
+
+```bash
+# Good
+readonly full_name="${first_name} ${last_name}"
+readonly path="${base_dir}/${file_name}"
+
+# Bad
+readonly full_name=$first_name $last_name  # 语法错误
+```
+
+### 变量替换
+
+- 使用 `${variable}` 进行变量替换
+- 使用 `${variable:-default}` 提供默认值
+- 使用 `${variable:=default}` 设置默认值（如果未定义）
+
+```bash
+# Good
+readonly port="${PORT:-8080}"              # 如果 PORT 未定义，使用 8080
+readonly log_level="${LOG_LEVEL:-info}"    # 如果 LOG_LEVEL 未定义，使用 info
+
+# 设置默认值（如果未定义）
+: "${BASE_DIR:=/opt/app}"                  # 如果 BASE_DIR 未定义，设置为 /opt/app
+```
+
+## 开发流程
+
+### 脚本开发步骤
+
+1. **先实现基本功能**：让脚本能正常工作，完成核心需求
+2. **添加错误处理**：使用 `set -euo pipefail`，添加错误检查
+3. **优化用户体验**：添加日志输出、进度提示、帮助信息
+4. **编写测试**：手动测试各种场景，验证边界情况
+5. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后立即手动测试验证
+- 保持函数的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小

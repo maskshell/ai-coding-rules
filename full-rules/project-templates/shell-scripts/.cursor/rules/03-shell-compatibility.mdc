@@ -1,0 +1,513 @@
+---
+description: Shell 脚本跨平台兼容性规范
+globs:
+- '**/*.sh'
+- '**/*.bash'
+alwaysApply: false
+tags:
+- shell
+- bash
+- compatibility
+- cross-platform
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Shell 脚本跨平台兼容性规范
+
+## 工具版本检测
+
+### 检测工具版本
+
+- 使用 `--version` 或 `-V` 选项检测工具版本
+- 通过版本输出来判断是 GNU 还是 BSD 版本
+
+```bash
+# 检测 sed 版本
+detect_sed_version() {
+  if sed --version >/dev/null 2>&1; then
+    echo "gnu"
+  else
+    echo "bsd"
+  fi
+}
+
+# 检测操作系统
+detect_os() {
+  case "$(uname -s)" in
+    Linux*)     echo "linux" ;;
+    Darwin*)    echo "macos" ;;
+    FreeBSD*)   echo "freebsd" ;;
+    *)          echo "unknown" ;;
+  esac
+}
+```
+
+### 判断 GNU vs BSD 版本
+
+- GNU 工具通常支持 `--version` 选项
+- BSD 工具通常不支持 `--version`，使用 `-v` 或没有版本选项
+
+```bash
+# 检测是否为 GNU 工具
+is_gnu_command() {
+  local cmd="$1"
+  if "${cmd}" --version >/dev/null 2>&1; then
+    return 0  # GNU
+  else
+    return 1  # BSD
+  fi
+}
+
+# 使用示例
+if is_gnu_command sed; then
+  echo "使用 GNU sed"
+else
+  echo "使用 BSD sed"
+fi
+```
+
+### 运行时环境检测
+
+- 检测操作系统、Shell 版本、工具可用性
+- 根据环境选择合适的命令选项
+
+```bash
+# 检测环境
+readonly OS="$(uname -s)"
+readonly IS_MACOS=false
+readonly IS_LINUX=false
+
+case "${OS}" in
+  Darwin*)
+    readonly IS_MACOS=true
+    ;;
+  Linux*)
+    readonly IS_LINUX=true
+    ;;
+esac
+
+# 检测工具可用性
+check_command() {
+  if command -v "$1" >/dev/null 2>&1; then
+    return 0
+  else
+    return 1
+  fi
+}
+```
+
+## sed 兼容性
+
+### GNU sed vs BSD sed 差异
+
+- **GNU sed**：`-i` 选项可以直接使用，如 `sed -i 's/old/new/' file`
+- **BSD sed**：`-i` 选项必须提供扩展名参数，如 `sed -i '' 's/old/new/' file`
+
+```bash
+# 兼容性写法
+if is_gnu_command sed; then
+  # GNU sed
+  sed -i 's/old/new/g' file.txt
+else
+  # BSD sed (macOS)
+  sed -i '' 's/old/new/g' file.txt
+fi
+
+# 或者使用临时文件（兼容所有版本）
+sed 's/old/new/g' file.txt > file.txt.tmp && mv file.txt.tmp file.txt
+```
+
+### 正则表达式语法差异
+
+- GNU sed 和 BSD sed 在正则表达式上基本一致
+- 但某些高级特性可能有差异
+
+```bash
+# 使用基本正则表达式（兼容性最好）
+sed 's/old/new/' file.txt
+
+# 使用扩展正则表达式
+sed -E 's/(old)/new\1/' file.txt  # GNU 和 BSD 都支持 -E
+```
+
+### 兼容性写法示例
+
+```bash
+# 通用替换函数
+sed_replace() {
+  local pattern="$1"
+  local replacement="$2"
+  local file="$3"
+
+  if is_gnu_command sed; then
+    sed -i "s|${pattern}|${replacement}|g" "${file}"
+  else
+    sed -i '' "s|${pattern}|${replacement}|g" "${file}"
+  fi
+}
+```
+
+## grep 兼容性
+
+### GNU grep vs BSD grep 差异
+
+- **GNU grep**：支持 `-P` 选项（Perl 正则表达式）
+- **BSD grep**：不支持 `-P` 选项
+- 两者都支持 `-E`（扩展正则表达式）和 `-F`（固定字符串）
+
+```bash
+# 兼容性写法：使用 -E 而非 -P
+# Good: 使用扩展正则表达式（兼容）
+grep -E 'pattern1|pattern2' file.txt
+
+# Bad: 使用 Perl 正则表达式（BSD 不支持）
+grep -P '\d+' file.txt  # BSD grep 不支持
+
+# 替代方案：使用字符类
+grep -E '[0-9]+' file.txt  # 兼容所有版本
+```
+
+### 选项支持差异
+
+```bash
+# 检测 grep 是否支持 -P
+if grep -P 'test' <<< 'test' >/dev/null 2>&1; then
+  readonly GREP_SUPPORTS_P=true
+else
+  readonly GREP_SUPPORTS_P=false
+fi
+
+# 根据支持情况选择选项
+if [[ "${GREP_SUPPORTS_P}" == "true" ]]; then
+  grep -P '\d+' file.txt
+else
+  grep -E '[0-9]+' file.txt
+fi
+```
+
+## date 兼容性
+
+### GNU date vs BSD date 差异
+
+- **GNU date**：`date -d "1 day ago"` 支持相对日期
+- **BSD date**：不支持 `-d` 选项，使用 `date -v-1d` 或 `date -j -f`
+
+```bash
+# 兼容性写法：获取昨天日期
+if is_gnu_command date; then
+  # GNU date
+  yesterday=$(date -d "1 day ago" +%Y-%m-%d)
+else
+  # BSD date (macOS)
+  yesterday=$(date -v-1d +%Y-%m-%d)
+fi
+
+# 或者使用通用方法（兼容所有版本）
+if [[ "${IS_MACOS}" == "true" ]]; then
+  yesterday=$(date -v-1d +%Y-%m-%d)
+else
+  yesterday=$(date -d "1 day ago" +%Y-%m-%d)
+fi
+```
+
+### 日期格式化差异
+
+- 格式化字符串基本相同，但某些选项可能有差异
+- 优先使用标准格式字符串
+
+```bash
+# 标准日期格式（兼容）
+date +%Y-%m-%d
+date +%Y-%m-%d\ %H:%M:%S
+date +%s  # Unix 时间戳
+```
+
+### 日期计算差异
+
+```bash
+# 通用日期计算函数
+add_days() {
+  local days="$1"
+  local base_date="${2:-$(date +%Y-%m-%d)}"
+
+  if is_gnu_command date; then
+    date -d "${base_date} +${days} days" +%Y-%m-%d
+  else
+    # BSD date
+    date -j -v+${days}d -f "%Y-%m-%d" "${base_date}" +%Y-%m-%d 2>/dev/null || \
+    date -v+${days}d -j -f "%Y-%m-%d" "${base_date}" +%Y-%m-%d
+  fi
+}
+```
+
+## awk 兼容性
+
+### GNU awk vs BSD awk 差异
+
+- GNU awk (gawk) 和 BSD awk 在基本功能上兼容
+- 某些高级特性可能有差异
+
+```bash
+# 基本用法（兼容）
+awk '{print $1}' file.txt
+awk -F',' '{print $2}' file.csv
+
+# 检测 awk 版本
+if awk --version >/dev/null 2>&1; then
+  readonly IS_GNU_AWK=true
+else
+  readonly IS_GNU_AWK=false
+fi
+```
+
+### 功能差异处理
+
+```bash
+# 优先使用 POSIX 标准功能
+awk 'BEGIN {FS=","} {print $1, $2}' file.csv
+
+# 避免使用 GNU 特定扩展
+# 如果必须使用，先检测版本
+if [[ "${IS_GNU_AWK}" == "true" ]]; then
+  # 使用 GNU 特定功能
+  awk 'BEGIN {print strftime("%Y-%m-%d")}'
+else
+  # 使用替代方案
+  date +%Y-%m-%d
+fi
+```
+
+## find 兼容性
+
+### GNU find vs BSD find 差异
+
+- **GNU find**：`-print0` 和 `-exec` 选项行为一致
+- **BSD find**：`-print0` 和 `-exec` 基本兼容，但某些选项可能有差异
+
+```bash
+# 基本用法（兼容）
+find . -name "*.txt"
+find . -type f -name "*.sh"
+
+# 使用 -print0 处理文件名包含空格的情况（兼容）
+find . -name "*.txt" -print0 | while IFS= read -r -d '' file; do
+  echo "处理文件: ${file}"
+done
+```
+
+### -exec 差异
+
+```bash
+# 兼容性写法
+# GNU 和 BSD find 都支持基本 -exec 语法
+find . -name "*.txt" -exec rm {} \;
+
+# 使用 + 替代 \; 提高性能（兼容）
+find . -name "*.txt" -exec rm {} +
+```
+
+## xargs 兼容性
+
+### GNU xargs vs BSD xargs 差异
+
+- **GNU xargs**：`-0` 选项支持良好
+- **BSD xargs**：`-0` 选项也支持，但某些选项可能有差异
+
+```bash
+# 使用 -0 处理包含空格的文件名（兼容）
+find . -name "*.txt" -print0 | xargs -0 rm
+
+# 检测 xargs 是否支持 -0
+if xargs --version >/dev/null 2>&1 2>&1 || xargs -0 </dev/null >/dev/null 2>&1; then
+  readonly XARGS_SUPPORTS_NULL=true
+else
+  readonly XARGS_SUPPORTS_NULL=false
+fi
+
+# 根据支持情况选择
+if [[ "${XARGS_SUPPORTS_NULL}" == "true" ]]; then
+  find . -name "*.txt" -print0 | xargs -0 rm
+else
+  find . -name "*.txt" -print0 | xargs -I {} rm {}
+fi
+```
+
+## sort 兼容性
+
+### GNU sort vs BSD sort 差异
+
+- 基本功能兼容，但某些选项可能有差异
+- 优先使用标准选项
+
+```bash
+# 基本排序（兼容）
+sort file.txt
+sort -r file.txt  # 逆序
+
+# 数值排序（兼容）
+sort -n file.txt
+
+# 检测 sort 版本
+if sort --version >/dev/null 2>&1; then
+  readonly IS_GNU_SORT=true
+else
+  readonly IS_GNU_SORT=false
+fi
+```
+
+### 选项差异处理
+
+```bash
+# 使用标准选项
+sort -t',' -k2 file.csv  # 按第二列排序（兼容）
+
+# 避免使用 GNU 特定选项
+# 如果必须使用，先检测版本
+if [[ "${IS_GNU_SORT}" == "true" ]]; then
+  sort --version-sort file.txt
+else
+  # 使用替代方案
+  sort -V file.txt  # 如果支持
+fi
+```
+
+## 其他工具
+
+### head 和 tail
+
+- 基本功能兼容
+- 某些选项可能有差异
+
+```bash
+# 基本用法（兼容）
+head -n 10 file.txt
+tail -n 20 file.txt
+
+# 实时监控（兼容）
+tail -f log.txt
+```
+
+### wc
+
+- 基本功能兼容
+
+```bash
+# 基本用法（兼容）
+wc -l file.txt
+wc -w file.txt
+wc -c file.txt
+```
+
+### 通用兼容性模式
+
+```bash
+# 检测命令是否可用
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# 使用示例
+if command_exists gsed; then
+  SED_CMD="gsed"  # macOS 上安装的 GNU sed
+else
+  SED_CMD="sed"
+fi
+
+"${SED_CMD}" -i 's/old/new/' file.txt
+```
+
+## 兼容性最佳实践
+
+### 优先使用 POSIX 标准语法
+
+- 使用 POSIX 标准命令和选项
+- 避免使用特定版本的扩展功能
+
+```bash
+# Good: 使用 POSIX 标准
+grep -E 'pattern' file.txt
+sed 's/old/new/' file.txt
+
+# Bad: 使用 GNU 特定选项
+grep -P 'pattern' file.txt  # BSD 不支持
+```
+
+### 检测工具可用性
+
+- 使用 `command -v` 检测工具是否可用
+- 提供替代方案或安装指导
+
+```bash
+# 检测工具可用性
+if ! command -v jq >/dev/null 2>&1; then
+  echo "错误: jq 未安装，请先安装: brew install jq" >&2
+  exit 1
+fi
+```
+
+### 提供工具安装指导
+
+- 在文档中说明如何安装 GNU 工具（如 macOS 用户）
+- 提供兼容性包装函数
+
+```bash
+# macOS 安装 GNU 工具
+# brew install coreutils findutils gnu-sed gnu-tar
+
+# 兼容性包装函数
+if [[ "${IS_MACOS}" == "true" ]] && command -v gsed >/dev/null 2>&1; then
+  readonly SED_CMD="gsed"
+else
+  readonly SED_CMD="sed"
+fi
+```
+
+### 使用兼容性包装函数
+
+- 创建统一的函数封装工具调用
+- 根据环境自动选择正确的选项
+
+```bash
+# sed 兼容性包装
+safe_sed_replace() {
+  local pattern="$1"
+  local replacement="$2"
+  local file="$3"
+
+  if is_gnu_command sed; then
+    sed -i "s|${pattern}|${replacement}|g" "${file}"
+  else
+    # BSD sed
+    sed -i '' "s|${pattern}|${replacement}|g" "${file}"
+  fi
+}
+
+# date 兼容性包装
+get_yesterday() {
+  if is_gnu_command date; then
+    date -d "1 day ago" +%Y-%m-%d
+  else
+    date -v-1d +%Y-%m-%d
+  fi
+}
+```
+
+## 开发流程
+
+### 跨平台脚本开发步骤
+
+1. **先实现基本功能**：在单一平台上让脚本能正常工作
+2. **检测运行环境**：添加操作系统和工具版本检测
+3. **处理兼容性差异**：为不同平台提供兼容性处理
+4. **测试多平台**：在 macOS 和 Linux 上分别测试
+5. **优化兼容性代码**：使用包装函数统一处理差异
+6. **文档说明**：在文档中说明平台要求和工具安装
+
+### 兼容性开发原则
+
+- 优先使用 POSIX 标准语法和选项
+- 检测工具版本和可用性，提供清晰的错误提示
+- 使用兼容性包装函数统一处理差异
+- 在文档中说明平台要求和工具安装方法
+- 在多个平台上测试脚本

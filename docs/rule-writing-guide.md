@@ -219,6 +219,7 @@ export function UserProfileCard({ user }: Props) {
   // ...
 }
 ```
+
 ````
 
 **原因**：
@@ -513,7 +514,7 @@ export function user_profile() { ... }
 ### 转换对比表
 
 | 要素 | 完整版 | 精简版 | 处理建议 |
-|------|--------|--------|----------|
+| --- | --- | --- | --- |
 | 标题 | `# React 基础规范` | `# React 基础规范` | **保留** |
 | 背景说明 | 200-300 字解释 | 删除 | **删除** |
 | 规则描述 | 段落 + 解释 | 列表项 | **精简** |
@@ -566,6 +567,7 @@ function Example3() {
   // 多行代码...
 }
 ```
+
 ````
 
 精简版：
@@ -824,7 +826,7 @@ fix: 修正 React hooks 规则表述（修复）
 **精简版规则 Token 消耗目标**（相对于完整版）：
 
 | 层级 | Token 范围 | 减少比例 | 验证方式 |
-|-----|-----------|---------|---------|
+| --- | --- | --- | --- |
 | IDE 层精简版 | 100-200 | ≥70% | `npm run check:tokens file` |
 | 项目层精简版 | 150-300 | ≥70% | `npm run check:tokens file` |
 | 完整版 | 500-800 | - | 参考基准 |
@@ -866,4 +868,5 @@ npm run format        # 格式化所有文件
   - [React 模板](../full-rules/project-templates/react-app)
   - [Vue 模板](../full-rules/project-templates/vue-app)
   - [Python 后端模板](../full-rules/project-templates/python-backend)
+  - [Shell Scripts 模板](../full-rules/project-templates/shell-scripts)
   - [全栈模板](../full-rules/project-templates/fullstack-monorepo)

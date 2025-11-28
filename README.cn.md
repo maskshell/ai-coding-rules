@@ -149,6 +149,7 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 - [React应用](./full-rules/project-templates/react-app/docs/coding-standards.md)
 - [Vue应用](./full-rules/project-templates/vue-app/docs/coding-standards.md)
 - [Python后端](./full-rules/project-templates/python-backend/docs/coding-standards.md)
+- [Shell脚本](./full-rules/project-templates/shell-scripts/docs/coding-standards.md)
 - [全栈项目](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 - [规则编写指南（含敏捷和设计模式指导）](./docs/rule-writing-guide.md)
 
