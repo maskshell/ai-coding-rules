@@ -288,7 +288,7 @@ cp .concise-rules/project-templates/react-app/* .cursor/rules/
 ### 规则文件位置
 
 - **IDE 层规则**：`full-rules/ide-layer/rulesets/` 和 `.concise-rules/ide-layer/`
-- **项目模板规则**：`full-rules/project-templates/{project}/.cursor/coderules/` 和 `.concise-rules/project-templates/{project}/`
+- **项目模板规则**：`full-rules/project-templates/{project}/.cursor/rules/` 和 `.concise-rules/project-templates/{project}/`
 
 ## 参考资料
 
