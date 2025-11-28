@@ -137,12 +137,15 @@ class RuleLinter:
 
         return issues
 
-    def check_code_examples(self, content: str) -> list[dict[str, str]]:
+    def check_code_examples(
+        self, content: str, file_path: Path | None = None
+    ) -> list[dict[str, str]]:
         """
         检查代码示例
 
         Args:
             content: 文件内容
+            file_path: 文件路径（可选，用于判断是否为精简版）
 
         Returns:
             错误和警告列表
@@ -150,14 +153,18 @@ class RuleLinter:
         issues = []
         code_blocks = CODE_BLOCK_PATTERN.findall(content)
 
+        # 精简版规则不强制要求代码示例
+        is_concise = file_path and ".concise-rules" in str(file_path)
+
         if len(code_blocks) == 0:
-            issues.append(
-                {
-                    "type": "error",
-                    "message": "缺少代码示例（至少需要 1 个）",
-                }
-            )
-        elif len(code_blocks) < 2:
+            if not is_concise:
+                issues.append(
+                    {
+                        "type": "error",
+                        "message": "缺少代码示例（至少需要 1 个）",
+                    }
+                )
+        elif len(code_blocks) < 2 and not is_concise:
             issues.append(
                 {
                     "type": "warning",
@@ -165,15 +172,16 @@ class RuleLinter:
                 }
             )
 
-        # 检查 Good/Bad 标注
-        good_bad_count = len(GOOD_BAD_PATTERN.findall(content))
-        if good_bad_count == 0 and len(code_blocks) > 0:
-            issues.append(
-                {
-                    "type": "warning",
-                    "message": "代码示例缺少 Good/Bad 标注",
-                }
-            )
+        # 检查 Good/Bad 标注（仅对完整版规则）
+        if not is_concise:
+            good_bad_count = len(GOOD_BAD_PATTERN.findall(content))
+            if good_bad_count == 0 and len(code_blocks) > 0:
+                issues.append(
+                    {
+                        "type": "warning",
+                        "message": "代码示例缺少 Good/Bad 标注",
+                    }
+                )
 
         return issues
 
@@ -257,7 +265,7 @@ class RuleLinter:
             else:
                 self.warnings.append(issue)
 
-        code_issues = self.check_code_examples(content)
+        code_issues = self.check_code_examples(content, file_path)
         for issue in code_issues:
             if issue["type"] == "error":
                 self.errors.append(issue)
