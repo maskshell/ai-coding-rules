@@ -14,6 +14,7 @@ author: ai-coding-rules-team
 ## JPA Repository
 
 **使用方式**：
+
 ```java
 public interface UserRepository extends JpaRepository<User, Long> {
     // 命名查询
@@ -39,6 +40,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 ```
 
 **实体映射**：
+
 ```java
 @Entity
 @Table(name = "orders")
@@ -74,6 +76,7 @@ public class Order {
 ## MyBatis / MyBatis-Plus
 
 **MyBatis**：
+
 ```java
 @Mapper
 public interface UserMapper {
@@ -92,6 +95,7 @@ public interface UserMapper {
 ```
 
 **MyBatis-Plus**：
+
 ```java
 // Mapper
 public interface UserMapper extends BaseMapper<User> {
@@ -147,6 +151,7 @@ public class OrderService {
 ## 分页查询
 
 **分页参数**：
+
 ```java
 @Data
 public class PageQuery {
@@ -165,6 +170,7 @@ public class PageQuery {
 ```
 
 **分页查询**：
+
 ```java
 @Service
 public class ProductService {
@@ -195,6 +201,7 @@ public class ProductService {
 ```
 
 **分页响应**：
+
 ```java
 @Data
 @Builder
@@ -218,6 +225,7 @@ public class PageResult<T> {
 8. **性能优化**：添加索引、优化查询、避免N+1问题
 
 **原则**：
+
 - 尽量使用JPA命名查询，减少手动SQL
 - 复杂查询使用@Query注解或XML配置
 - 读写分离操作标记readOnly = true

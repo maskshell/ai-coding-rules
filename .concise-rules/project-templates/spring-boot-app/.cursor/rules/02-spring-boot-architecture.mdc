@@ -16,6 +16,7 @@ author: ai-coding-rules-team
 Request → Controller → Service → Repository → Database
 
 **职责**：
+
 - **Controller**：接收请求，参数验证，返回响应
 - **Service**：业务逻辑，事务管理，调用Repository
 - **Repository**：数据访问，CRUD操作
@@ -23,6 +24,7 @@ Request → Controller → Service → Repository → Database
 - **DTO**：数据传输，隔离内外模型
 
 **示例**:
+
 ```java
 // Controller
 @RestController
@@ -72,6 +74,7 @@ public class UserCreateDTO {
 ## RESTful API设计
 
 **URL规范**：
+
 - 使用复数名词：`/users`, `/products`
 - 使用连字符：`-`
 - 版本号：`/api/v1/`
@@ -79,6 +82,7 @@ public class UserCreateDTO {
 - 动作接口：`/users/{id}/change-password`
 
 **HTTP方法**：
+
 - GET: 查询列表或单个
 - POST: 创建资源
 - PUT: 完全更新
@@ -86,6 +90,7 @@ public class UserCreateDTO {
 - DELETE: 删除资源
 
 **响应格式**：
+
 ```java
 @Data
 public class Result<T> {
@@ -113,6 +118,7 @@ public class Result<T> {
 ## 异常处理
 
 **全局异常处理器**：
+
 ```java
 @Slf4j
 @RestControllerAdvice
@@ -144,6 +150,7 @@ public class GlobalExceptionHandler {
 ```
 
 **自定义异常**：
+
 ```java
 public class BusinessException extends RuntimeException {
     private final int code;
@@ -170,6 +177,7 @@ public class UserAlreadyExistsException extends BusinessException {
 ## 日志记录
 
 **规范**：
+
 ```java
 @Slf4j
 @Service
@@ -214,6 +222,7 @@ public class OrderService {
 ## API文档
 
 **Swagger注解**：
+
 ```java
 @RestController
 @RequestMapping("/api/v1/users")
@@ -243,6 +252,7 @@ public class UserController {
 8. **添加测试**：编写单元测试和集成测试
 
 **原则**：
+
 - Controller只做参数验证和响应封装
 - Service层负责业务逻辑和事务
 - Repository只负责数据访问
