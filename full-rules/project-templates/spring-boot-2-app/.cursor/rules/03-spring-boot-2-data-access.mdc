@@ -1,0 +1,413 @@
+---
+description: Spring Boot 2.0 数据访问
+globs:
+- '**/*.java'
+- '**/*.xml'
+alwaysApply: false
+tags:
+- spring-boot
+- spring-boot-2
+- data-access
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Spring Boot 2.0 数据访问
+
+## JPA Repository
+
+### 使用 Spring Data JPA
+
+- 继承 JpaRepository 接口，获得基本 CRUD 操作
+- 使用命名约定创建查询方法
+- 使用 @Query 注解自定义 JPQL 或原生 SQL
+- Spring Boot 2.0 默认使用 HikariCP 连接池
+
+**示例**:
+```java
+// 接口定义
+public interface UserRepository extends JpaRepository<User, Long> {
+    // 通过方法名自动创建查询
+    Optional<User> findByUsername(String username);
+
+    boolean existsByUsername(String username);
+
+    boolean existsByEmail(String email);
+
+    // 使用 JPQL
+    @Query("SELECT u FROM User u WHERE u.enabled = true AND u.createdAt BETWEEN ?1 AND ?2")
+    List<User> findActiveUsersBetweenDate(Date start, Date end);
+
+    // 使用原生 SQL
+    @Query(value = "SELECT * FROM users WHERE username LIKE %:username%", nativeQuery = true)
+    List<User> findByUsernameLike(@Param("username") String username);
+
+    // 分页和排序
+    Page<User> findByEnabled(Boolean enabled, Pageable pageable);
+
+    // 更新操作
+    @Modifying
+    @Transactional
+    @Query("UPDATE User u SET u.password = :password WHERE u.id = :id")
+    int updatePassword(@Param("id") Long id, @Param("password") String password);
+}
+
+// 使用示例
+@Service
+@Transactional
+public class UserService {
+    private final UserRepository userRepository;
+
+    public User updateUser(Long id, UserUpdateDTO dto) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new UserNotFoundException("用户不存在"));
+
+        user.setUsername(dto.getUsername());
+        user.setEmail(dto.getEmail());
+
+        return userRepository.save(user);
+    }
+}
+```
+
+### JPA 实体映射
+
+```java
+@Entity
+@Table(name = "orders")
+@Data
+public class Order implements Serializable {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_no", nullable = false, unique = true, length = 32)
+    private String orderNo;
+
+    @Column(nullable = false)
+    private BigDecimal amount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OrderStatus status;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> items = new ArrayList<>();
+
+    @Column(name = "created_at", updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+}
+```
+
+## MyBatis / MyBatis-Plus
+
+### MyBatis 使用方式（Spring Boot 2.0）
+
+```java
+// Mapper 接口
+@Mapper
+public interface UserMapper {
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    @Results({
+        @Result(property = "id", column = "id"),
+        @Result(property = "username", column = "username"),
+        @Result(property = "email", column = "email"),
+        @Result(property = "createdAt", column = "created_at")
+    })
+    User findById(Long id);
+
+    @Insert("INSERT INTO users(username, email, password) VALUES(#{username}, #{email}, #{password})")
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(User user);
+
+    @Update("UPDATE users SET username = #{username}, email = #{email} WHERE id = #{id}")
+    int update(User user);
+
+    @Delete("DELETE FROM users WHERE id = #{id}")
+    int delete(Long id);
+}
+
+// XML 方式
+// src/main/resources/mapper/UserMapper.xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UserMapper">
+    <resultMap id="UserResult" type="com.example.demo.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="email" column="email"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findById" resultMap="UserResult">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+</mapper>
+```
+
+### MyBatis-Plus 高级特性
+
+```java
+// 继承 BaseMapper
+public interface UserMapper extends BaseMapper<User> {
+    // 自定义扩展查询
+    @Select("SELECT * FROM users WHERE username LIKE #{username}")
+    List<User> findByUsernameLike(@Param("username") String username);
+}
+
+// Service 层继承 IService
+public interface UserService extends IService<User> {
+    // 自定义方法
+    User findByUsername(String username);
+}
+
+// Service 实现
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+    @Override
+    public User findByUsername(String username) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        wrapper.eq("username", username);
+        return getOne(wrapper);
+    }
+
+    public Page<User> searchUsers(UserQuery query) {
+        QueryWrapper<User> wrapper = new QueryWrapper<>();
+        if (StringUtils.isNotBlank(query.getUsername())) {
+            wrapper.like("username", query.getUsername());
+        }
+        if (StringUtils.isNotBlank(query.getEmail())) {
+            wrapper.like("email", query.getEmail());
+        }
+        wrapper.orderByDesc("created_at");
+
+        return page(new Page<>(query.getPage(), query.getPageSize()), wrapper);
+    }
+}
+```
+
+## 事务管理
+
+### 使用 @Transactional 注解
+
+```java
+@Service
+public class OrderService {
+    private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final ProductRepository productRepository;
+
+    @Transactional
+    public OrderDTO createOrder(OrderCreateDTO dto) {
+        // 1. 创建订单
+        Order order = new Order();
+        order.setOrderNo(generateOrderNo());
+        order.setUserId(dto.getUserId());
+        order.setAmount(dto.getAmount());
+        order.setStatus(OrderStatus.PENDING);
+
+        Order savedOrder = orderRepository.save(order);
+
+        // 2. 创建订单项
+        List<OrderItem> items = dto.getItems().stream().map(itemDTO -> {
+            OrderItem item = new OrderItem();
+            item.setOrderId(savedOrder.getId());
+            item.setProductId(itemDTO.getProductId());
+            item.setQuantity(itemDTO.getQuantity());
+            item.setPrice(itemDTO.getPrice());
+            return item;
+        }).collect(Collectors.toList());
+
+        orderItemRepository.saveAll(items);
+
+        // 3. 扣减库存
+        for (OrderItem item : items) {
+            productRepository.decreaseStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 4. 更新订单状态
+        savedOrder.setStatus(OrderStatus.CONFIRMED);
+        orderRepository.save(savedOrder);
+
+        return orderMapper.toDTO(savedOrder);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderDTO getOrder(Long id) {
+        Order order = orderRepository.findById(id)
+            .orElseThrow(() -> new OrderNotFoundException("订单不存在"));
+        List<OrderItem> items = orderItemRepository.findByOrderId(id);
+        order.setItems(items);
+        return orderMapper.toDTO(order);
+    }
+}
+```
+
+### 事务传播行为
+
+```java
+@Service
+public class UserService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    @Transactional
+    public void registerUser(User user) {
+        // 1. 保存用户（要求必须在新事务中）
+        userRepository.save(user);
+
+        // 2. 发送邮件（使用新事务，避免邮件失败影响用户注册）
+        try {
+            emailService.sendWelcomeEmail(user.getEmail());
+        } catch (Exception e) {
+            log.error("发送欢迎邮件失败", e);
+            // 不抛出异常，不影响主事务
+        }
+    }
+}
+
+@Service
+public class EmailService {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void sendWelcomeEmail(String email) {
+        // 发送邮件逻辑
+    }
+}
+```
+
+## 分页查询
+
+### 通用分页实现
+
+```java
+// 分页查询参数
+@Data
+public class PageQuery implements Serializable {
+    private static final int DEFAULT_PAGE = 1;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
+
+    @Min(1)
+    private Integer page = DEFAULT_PAGE;
+
+    @Min(1)
+    @Max(MAX_PAGE_SIZE)
+    private Integer pageSize = DEFAULT_PAGE_SIZE;
+
+    @JsonIgnore
+    public int getOffset() {
+        return (page - 1) * pageSize;
+    }
+
+    @JsonIgnore
+    public PageRequest toPageRequest() {
+        return PageRequest.of(page - 1, pageSize);
+    }
+
+    @JsonIgnore
+    public PageRequest toPageRequest(Sort sort) {
+        return PageRequest.of(page - 1, pageSize, sort);
+    }
+}
+
+// 分页查询使用
+@Service
+public class ProductService {
+    private final ProductRepository productRepository;
+
+    public PageResult<ProductDTO> searchProducts(ProductQuery query) {
+        // 1. 构建查询规格
+        Specification<Product> spec = (root, criteriaQuery, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (StringUtils.isNotBlank(query.getName())) {
+                predicates.add(criteriaBuilder.like(
+                    root.get("name"), "%" + query.getName() + "%"
+                ));
+            }
+
+            if (query.getCategoryId() != null) {
+                predicates.add(criteriaBuilder.equal(
+                    root.get("categoryId"), query.getCategoryId()
+                ));
+            }
+
+            if (query.getMinPrice() != null) {
+                predicates.add(criteriaBuilder.ge(
+                    root.get("price"), query.getMinPrice()
+                ));
+            }
+
+            if (query.getMaxPrice() != null) {
+                predicates.add(criteriaBuilder.le(
+                    root.get("price"), query.getMaxPrice()
+                ));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        // 2. 构建分页和排序
+        Sort sort = Sort.by(query.getSortDirection(), query.getSortField());
+        PageRequest pageRequest = query.toPageRequest(sort);
+
+        // 3. 执行查询
+        Page<Product> page = productRepository.findAll(spec, pageRequest);
+
+        // 4. 转换结果
+        return PageResult.<ProductDTO>builder()
+            .total(page.getTotalElements())
+            .page(query.getPage())
+            .pageSize(query.getPageSize())
+            .items(page.getContent().stream()
+                .map(productMapper::toDTO)
+                .collect(Collectors.toList()))
+            .build();
+    }
+}
+
+// PageResult 响应
+@Data
+@Builder
+public class PageResult<T> {
+    private long total;           // 总记录数
+    private int page;             // 当前页码
+    private int pageSize;         // 每页数量
+    private List<T> items;        // 数据列表
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **分析需求**：理解业务场景，设计数据模型
+2. **创建实体**：根据数据表创建 JPA Entity 或 MyBatis 模型
+3. **创建 Repository**：继承 JpaRepository 或定义 Mapper 接口
+4. **编写 Service**：在 Service 层实现业务逻辑和数据访问
+5. **添加事务**：使用 @Transactional 管理事务边界
+6. **处理异常**：抛出自定义业务异常
+7. **编写测试**：单元测试、集成测试验证数据访问逻辑
+8. **性能优化**：添加索引、优化查询、避免 N+1 问题
+
+### 功能开发原则
+
+- 尽量使用 JPA 命名查询，减少手动编写 SQL
+- 复杂查询使用 @Query 注解或 XML 配置
+- 读写分离操作标记 readOnly = true
+- 批量操作使用 saveAll、deleteAll 而非循环调用
+- 分页查询始终限制最大页码数，防止内存溢出
+- 关联查询注意懒加载和 N+1 问题，合理使用 JOIN FETCH
+- 利用 Spring Boot 2.0 的 HikariCP 连接池优化数据库连接

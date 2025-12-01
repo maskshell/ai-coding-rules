@@ -1,0 +1,89 @@
+---
+description: Spring Boot 2.0 基础规范（精简版）
+globs:
+- '**/*.java'
+- '**/*.xml'
+- '**/*.yml'
+alwaysApply: false
+tags:
+- spring-boot
+- spring-boot-2
+- java
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Spring Boot 2.0 基础规范（精简版）
+
+## 项目结构
+
+- 按功能模块划分包：`user`, `order`, `product`
+- 接口和实现分离：`UserService` + `UserServiceImpl`
+- DTO 和 Entity 严格分离
+
+```java
+@Entity
+@Table(name = "users")
+@Data
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false, unique = true)
+    private String username;
+}
+```
+
+## 构建配置
+
+- Maven：使用 Spring Boot Parent POM 2.0.9.RELEASE
+- Java 版本：Java 11
+- 依赖分类：Web、数据访问、工具、测试
+
+```xml
+<parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>2.0.9.RELEASE</version>
+</parent>
+<properties>
+    <java.version>11</java.version>
+</properties>
+```
+
+## 配置文件
+
+- 使用 YAML 格式
+- 敏感信息从环境变量读取
+- 使用 `@ConfigurationProperties` 进行类型安全绑定
+
+```java
+@ConfigurationProperties(prefix = "app")
+@Validated
+@Data
+public class AppProperties {
+    @NotBlank
+    private String name;
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. 设计数据库表
+2. 创建实体类（JPA Entity）
+3. 创建 DTO
+4. 创建 Repository
+5. 创建 Service
+6. 创建 Controller
+7. 编写测试
+8. 运行验证
+
+### 功能开发原则
+
+- 优先实现核心功能，验证业务流程
+- Controller 简洁，只处理请求和响应
+- 业务逻辑放在 Service 层
+- 及时提交代码，保持小的提交粒度

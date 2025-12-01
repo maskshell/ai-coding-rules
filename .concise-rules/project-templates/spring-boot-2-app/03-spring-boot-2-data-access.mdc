@@ -1,0 +1,81 @@
+---
+description: Spring Boot 2.0 数据访问（精简版）
+globs:
+- '**/*.java'
+- '**/*.xml'
+alwaysApply: false
+tags:
+- spring-boot
+- spring-boot-2
+- data-access
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Spring Boot 2.0 数据访问（精简版）
+
+## JPA Repository
+
+- 继承 `JpaRepository` 接口
+- 使用命名约定创建查询方法
+- 使用 `@Query` 注解自定义查询
+- Spring Boot 2.0 默认使用 HikariCP 连接池
+
+```java
+public interface UserRepository extends JpaRepository<User, Long> {
+    Optional<User> findByUsername(String username);
+    
+    @Query("SELECT u FROM User u WHERE u.enabled = true")
+    List<User> findActiveUsers();
+}
+```
+
+## MyBatis
+
+- 使用 `@Mapper` 注解
+- 支持注解和 XML 两种方式
+
+```java
+@Mapper
+public interface UserMapper {
+    @Select("SELECT * FROM users WHERE id = #{id}")
+    User findById(Long id);
+}
+```
+
+## 事务管理
+
+- 使用 `@Transactional` 注解
+- 读写分离操作标记 `readOnly = true`
+
+```java
+@Service
+@Transactional
+public class OrderService {
+    @Transactional(readOnly = true)
+    public OrderDTO getOrder(Long id) {
+        // 查询操作
+    }
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. 分析需求，设计数据模型
+2. 创建实体（JPA Entity 或 MyBatis 模型）
+3. 创建 Repository 或 Mapper
+4. 编写 Service
+5. 添加事务
+6. 处理异常
+7. 编写测试
+8. 性能优化
+
+### 功能开发原则
+
+- 尽量使用 JPA 命名查询
+- 复杂查询使用 `@Query` 或 XML
+- 批量操作使用 `saveAll`、`deleteAll`
+- 分页查询限制最大页码数
+- 注意懒加载和 N+1 问题

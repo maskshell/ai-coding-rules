@@ -43,7 +43,7 @@ IDE层（通用） ← 优先级最低，最抽象
 - 规则涉及通用编程原则（代码质量、可读性、安全性）
 - 规则是关于 AI 助手行为的偏好
 
-**创建项目层规则（`full-rules/project-templates/{project}/.cursor/coderules/`）当**:
+**创建项目层规则（`full-rules/project-templates/{project}/.cursor/rules/`）当**:
 
 - 规则特定于某个框架或技术栈
 - 规则涉及具体的编码实践和模式
@@ -691,29 +691,36 @@ npm run convert-to-concise -- full-rules/ide-layer/01-general.md
 
 ### 步骤 2：创建目录结构
 
-**标准结构**：
+**标准结构**（必须包含完整版和精简版）：
 
 ```text
 full-rules/project-templates/new-framework-app/
 ├── .cursor/
-│   └── coderules/          # AI执行的规则
-│       ├── 01-{framework}-basics.md
-│       ├── 02-{framework}-advanced.md
+│   └── rules/              # AI执行的完整版规则（必需）
+│       ├── 01-{framework}-basics.mdc
+│       ├── 02-{framework}-advanced.mdc
 │       └── ...
 └── docs/
-    └── coding-standards.md  # 人类阅读的完整规范
+    └── coding-standards.md  # 人类阅读的完整规范（必需）
+
+.concise-rules/project-templates/new-framework-app/
+├── 01-{framework}-basics.mdc    # 精简版规则（必需）
+├── 02-{framework}-advanced.mdc
+└── ...
 ```
 
-**coderules 文件组织**：
+**重要**：项目层模板必须同时创建完整版和精简版规则。
 
-- `01-{framework}-basics.md`：基础概念、项目结构、命名规范
-- `02-{framework}-architecture.md`：架构设计、状态管理、组件通信
-- `03-{framework}-api.md`：API调用、数据获取、错误处理
+**rules 文件组织**：
+
+- `01-{framework}-basics.mdc`：基础概念、项目结构、命名规范
+- `02-{framework}-architecture.mdc`：架构设计、状态管理、组件通信
+- `03-{framework}-api.mdc`：API调用、数据获取、错误处理
 - `...`：其他特定主题
 
 **必须遵循数字前缀**，确保加载顺序合理。
 
-### 步骤 3：编写 AI 规则（.cursor/coderules/*.md）
+### 步骤 3：编写完整版 AI 规则（.cursor/rules/*.mdc）
 
 **内容要求**：
 
@@ -756,7 +763,28 @@ full-rules/project-templates/new-framework-app/
 
 **开发流程部分是必需的**，必须包含敏捷原则的具体步骤。
 
-### 步骤 4：编写人类文档（docs/coding-standards.md）
+### 步骤 4：创建精简版规则（.concise-rules/project-templates/{project}/*.mdc）
+
+**必需步骤**：项目层模板必须创建精简版规则。
+
+**创建方法**：
+
+1. 根据第五章"从完整版创建精简版规则"的指导
+2. 保留所有核心指令
+3. 删除 70-80% 的解释性文字
+4. 示例数量从 3-5 个减少到 1-2 个
+5. 保持相同的文件命名和结构
+
+**精简版要求**：
+
+- 文件名与完整版一致（如 `01-spring-boot-2-basics.mdc`）
+- 保留 Frontmatter（description 标注"精简版"）
+- 保留开发流程章节
+- Token 消耗减少 70-80%
+
+**验证**：使用 `python scripts/lint-rules.py .concise-rules/project-templates/{project}/ --check` 验证。
+
+### 步骤 5：编写人类文档（docs/coding-standards.md）
 
 **内容要求**：
 
@@ -769,23 +797,23 @@ full-rules/project-templates/new-framework-app/
 
 **比 AI 规则更详细**，提供深度解释。
 
-### 步骤 5：测试模板
+### 步骤 6：测试模板
 
 **验证内容**：
 
 1. 使用 Cursor 新建项目
-2. 复制 `.cursor/coderules/` 到项目
+2. 复制 `.cursor/rules/` 到项目
 3. 让 AI 实现一个小功能（如用户登录）
 4. 检查生成的代码是否符合预期
 5. 根据结果调整规则
 
-### 步骤 6：更新文档
+### 步骤 7：更新文档
 
 **必须更新**：
 
 - 根目录 README.md：在目录结构中添加新模板
 - docs/rule-writing-guide.md：在参考资料中添加新模板链接
-- 在提交信息中明确说明新增内容
+- 在提交信息中明确说明新增内容（包括完整版和精简版）
 
 ## 七、验证清单
 
@@ -794,9 +822,10 @@ full-rules/project-templates/new-framework-app/
 ### 文件规范
 
 - [ ] 文件名有数字前缀（如 `01-`）
-- [ ] 文件名使用小写和短横线（如 `react-basics.md`）
+- [ ] 文件名使用小写和短横线（如 `react-basics.mdc`）
 - [ ] 放在正确的层次（IDE层或项目层）
 - [ ] 同一层次的文件前缀不重复
+- [ ] **项目层必须同时创建完整版和精简版规则**
 
 ### 内容规范
 
@@ -821,13 +850,18 @@ full-rules/project-templates/new-framework-app/
 - [ ] 模式指导与框架匹配（React用Hooks/Reducer，Vue用Composables/Pinia）
 - [ ] 不教条化，提供选择依据
 
-### 精简版转换（如适用）
+### 精简版规则（项目层必需）
 
+**项目层模板必须创建精简版规则**：
+
+- [ ] 已创建 `.concise-rules/project-templates/{project}/` 目录
+- [ ] 精简版文件与完整版文件一一对应（相同文件名）
 - [ ] 保留了所有核心指令
 - [ ] 删除了 70-80% 的解释性文字
 - [ ] 示例数量从 3-5 个减少到 1-2 个
 - [ ] 结构保持一致（标题层级、数字前缀）
-- [ ] Token 数量确实大幅减少
+- [ ] Token 数量确实大幅减少（70-80%）
+- [ ] 精简版通过 lint 检查
 
 ### 文档更新
 
@@ -864,7 +898,7 @@ full-rules/project-templates/new-framework-app/
 
 ```markdown
 ✅ 正确（在项目层）
-full-rules/project-templates/react-app/.cursor/coderules/01-react-basics.md:
+full-rules/project-templates/react-app/.cursor/rules/01-react-basics.mdc:
 
 ### Hooks 使用
 
@@ -982,19 +1016,20 @@ export function Card() { ... }  // 太泛化
 
 ### 本项目的规则示例
 
-- [IDE 层规则](./full-rules/ide-layer/rulesets/)
-- React 项目：
-  - AI规则：[.cursor/coderules](./full-rules/project-templates/react-app/.cursor/coderules/)
-  - 文档：[coding-standards.md](./full-rules/project-templates/react-app/docs/coding-standards.md)
-- Vue 项目：
-  - AI规则：[.cursor/coderules](./full-rules/project-templates/vue-app/.cursor/coderules/)
-  - 文档：[coding-standards.md](./full-rules/project-templates/vue-app/docs/coding-standards.md)
-- Python 后端：
-  - AI规则：[.cursor/coderules](./full-rules/project-templates/python-backend/.cursor/coderules/)
-  - 文档：[coding-standards.md](./full-rules/project-templates/python-backend/docs/coding-standards.md)
-- 全栈项目：
-  - AI规则：[.cursor/coderules](./full-rules/project-templates/fullstack-monorepo/.cursor/coderules/)
-  - 文档：[coding-standards.md](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
+**目录结构**（所有项目模板遵循相同结构）：
+
+```text
+full-rules/project-templates/{project}/
+├── .cursor/rules/              # AI规则（完整版）
+└── docs/coding-standards.md    # 人类阅读文档
+
+.concise-rules/project-templates/{project}/
+└── *.mdc                       # AI规则（精简版）
+```
+
+- [IDE 层规则](./full-rules/ide-layer/rulesets/)：通用编程原则和 AI 助手行为偏好
+
+**项目模板**：`full-rules/project-templates/` 目录下包含 React、Vue、Python 后端、全栈、Spring Boot 2.0、Shell Scripts、OpenResty Lua、Spring Boot 等项目模板。详见各项目目录。
 
 ### 外部参考
 

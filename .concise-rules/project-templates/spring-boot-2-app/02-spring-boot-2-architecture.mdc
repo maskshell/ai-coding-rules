@@ -1,0 +1,96 @@
+---
+description: Spring Boot 2.0 架构设计（精简版）
+globs:
+- '**/*.java'
+alwaysApply: false
+tags:
+- spring-boot
+- spring-boot-2
+- architecture
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Spring Boot 2.0 架构设计（精简版）
+
+## 分层架构
+
+- Controller：接收 HTTP 请求，参数验证，返回响应
+- Service：业务逻辑，事务管理
+- Repository：数据访问，CRUD 操作
+- Entity：JPA 实体类
+- DTO：数据传输对象
+
+```java
+@RestController
+@RequestMapping("/api/v1/users")
+public class UserController {
+    private final UserService userService;
+    
+    @GetMapping("/{id}")
+    public ResponseEntity<Result<UserDTO>> getUser(@PathVariable Long id) {
+        UserDTO user = userService.getUserById(id);
+        return ResponseEntity.ok(Result.success(user));
+    }
+}
+```
+
+## RESTful API 设计
+
+- URL 使用复数名词：`/users`, `/products`
+- 版本号：`/api/v1/`
+- 使用标准响应格式 `Result<T>`
+
+```java
+@Data
+public class Result<T> {
+    private int code;
+    private String message;
+    private T data;
+    
+    public static <T> Result<T> success(T data) {
+        Result<T> result = new Result<>();
+        result.setCode(200);
+        result.setMessage("success");
+        result.setData(data);
+        return result;
+    }
+}
+```
+
+## 异常处理
+
+- 使用 `@RestControllerAdvice` 统一处理异常
+- 自定义业务异常继承 `BusinessException`
+
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException ex) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(Result.error(ex.getCode(), ex.getMessage()));
+    }
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. 设计接口（API 路径、请求/响应格式）
+2. 创建 DTO
+3. 实现 Controller
+4. 实现 Service
+5. 实现 Repository
+6. 处理异常
+7. 验证测试
+8. 添加测试
+
+### 功能开发原则
+
+- Controller 层只做参数验证和响应封装
+- Service 层负责业务逻辑和事务管理
+- Repository 层只负责数据访问
+- 使用 Mapper 进行 Entity 和 DTO 转换
