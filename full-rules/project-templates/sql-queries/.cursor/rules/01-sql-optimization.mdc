@@ -1,0 +1,144 @@
+---
+description: 复杂SQL查询优化规范
+globs:
+- '**/*.sql'
+alwaysApply: false
+tags:
+- sql
+- optimization
+- database
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# 复杂SQL查询优化规范
+
+## 核心原则
+
+**复杂SQL优化必须采用渐进式重构，严禁一次性全面重构**
+
+违反此规则可能导致业务逻辑错误、数据不一致，且难以修复和定位问题。
+
+## 执行要求
+
+### 重构前检查
+
+- 判断是否为复杂查询（嵌套层数>3层 或 子查询>5个）
+- 复杂查询必须采用渐进式重构
+- 简单查询可以直接优化
+
+### 渐进式重构流程
+
+1. **选择最小可优化单元**：单个子查询或JOIN
+2. **进行最小化修改**：只修改选定的单元
+3. **验证结果一致性**：与原查询100%一致
+4. **确认无误后继续**：选择下一个最小单元
+5. **重复步骤1-4**：直到所有单元优化完成
+
+### 验证要求
+
+- 每步重构后必须执行查询验证
+- 结果必须与原查询完全一致（行数、列数、数据值）
+- 验证通过后才能进行下一步
+- 使用相同的数据集和测试用例
+
+### 禁止行为
+
+- ❌ 一次性重构整个复杂查询
+- ❌ 同时修改多个子查询
+- ❌ 跳过验证步骤
+- ❌ 验证失败时继续下一步
+- ❌ 在没有备份的情况下修改生产查询
+
+### 文件命名规范
+
+- 使用 `原文件名-step1.sql`、`原文件名-step2.sql` 等格式
+- 每步都要有独立的验证文件
+- 保留原始查询文件作为参考
+
+**示例**：
+
+```sql
+-- 原始文件: user_report.sql
+-- 第一步: user_report-step1.sql
+-- 第二步: user_report-step2.sql
+-- 验证文件: user_report-step1-verify.sql
+```
+
+## 重构示例
+
+### 示例：优化嵌套子查询
+
+**原始查询**（复杂查询）：
+
+```sql
+SELECT u.id, u.name, 
+       (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) as order_count,
+       (SELECT SUM(o.amount) FROM orders o WHERE o.user_id = u.id) as total_amount
+FROM users u
+WHERE u.created_at > '2024-01-01'
+  AND (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) > 0;
+```
+
+**步骤1：提取子查询到CTE**
+
+```sql
+-- user_report-step1.sql
+WITH user_orders AS (
+  SELECT user_id, 
+         COUNT(*) as order_count,
+         SUM(amount) as total_amount
+  FROM orders
+  GROUP BY user_id
+)
+SELECT u.id, u.name, 
+       COALESCE(uo.order_count, 0) as order_count,
+       COALESCE(uo.total_amount, 0) as total_amount
+FROM users u
+LEFT JOIN user_orders uo ON u.id = uo.user_id
+WHERE u.created_at > '2024-01-01'
+  AND COALESCE(uo.order_count, 0) > 0;
+```
+
+**验证步骤1**：
+
+```sql
+-- user_report-step1-verify.sql
+-- 比较两个查询的结果是否完全一致
+```
+
+**步骤2：优化JOIN条件**（如果需要）
+
+```sql
+-- user_report-step2.sql
+-- 在步骤1的基础上进一步优化
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **分析原始查询**：理解业务逻辑，识别性能瓶颈
+2. **识别优化单元**：找出可以独立优化的子查询或JOIN
+3. **选择最小单元**：从最简单的单元开始
+4. **进行最小化修改**：只修改选定的单元
+5. **执行验证**：确保结果与原查询完全一致
+6. **记录变更**：在验证文件中记录修改内容
+7. **继续下一步**：验证通过后选择下一个单元
+8. **最终验证**：所有优化完成后进行全面测试
+
+### 功能开发原则
+
+- 优先保证正确性，再考虑性能优化
+- 每个优化步骤都要有独立的验证
+- 保持原始查询文件作为参考
+- 通过小步迭代逐步改善查询性能
+- 及时提交代码，保持提交粒度小
+- 在测试环境充分验证后再应用到生产环境
+
+### 性能优化原则
+
+- 先优化逻辑结构（子查询、JOIN），再优化索引
+- 使用EXPLAIN分析查询计划
+- 避免过度优化，保持查询可读性
+- 考虑数据库特定的优化技巧（如PostgreSQL的CTE、MySQL的索引提示）
