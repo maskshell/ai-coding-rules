@@ -815,6 +815,26 @@ full-rules/project-templates/new-framework-app/
 - docs/rule-writing-guide.md：在参考资料中添加新模板链接
 - 在提交信息中明确说明新增内容（包括完整版和精简版）
 
+### 步骤 8：提交前验证
+
+**提交前必须验证 commit message 准确性**：
+
+1. **检查实际更改的文件**：
+
+   ```bash
+   git status --short
+   git diff --stat
+   ```
+
+2. **验证 message 准确性**：
+   - 确认 message 中提到的文件确实被更改
+   - 确认 commit type 与实际更改类型匹配
+   - 确认描述的操作与实际操作一致
+
+3. **如果不匹配，使用 `git commit --amend` 修正**
+
+**规则**：Commit message 必须准确描述实际更改，不能夸大或缩小改动范围。
+
 ## 七、验证清单
 
 创建或更新规则文件前，使用此清单检查：
