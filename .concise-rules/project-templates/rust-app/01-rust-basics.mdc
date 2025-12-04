@@ -1,0 +1,98 @@
+---
+description: Rust 编码基础（精简版）
+globs:
+- '**/*.rs'
+alwaysApply: false
+tags:
+- rust
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Rust 编码基础（精简版）
+
+## 所有权和借用
+
+- 每个值只有一个所有者，值离开作用域时自动释放
+- 移动语义：所有权转移，原变量不可用
+- 复制语义：实现 `Copy` trait 的类型自动复制
+- 不可变借用可以有多个，可变借用只能有一个
+- 优先使用引用而非移动所有权
+
+```rust
+// 移动语义
+let s1 = String::from("hello");
+let s2 = s1; // s1 的所有权移动到 s2
+
+// 借用
+fn calculate_length(s: &str) -> usize {
+    s.len()
+}
+```
+
+## 生命周期
+
+- 函数返回引用时需要显式标注生命周期
+- 生命周期参数以 `'` 开头
+- 编译器可以自动推断大多数生命周期
+
+```rust
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() { x } else { y }
+}
+```
+
+## 类型系统
+
+- 使用 `Option<T>` 表示可能为空的值
+- 使用 `Result<T, E>` 表示可能失败的操作
+- 优先使用 `match` 或 `if let` 处理，避免 `unwrap()`
+
+```rust
+fn find_user(id: u64) -> Option<User> {
+    Some(User { /* ... */ })
+}
+
+match find_user(1) {
+    Some(user) => println!("Found: {}", user.username),
+    None => println!("Not found"),
+}
+```
+
+## 模式匹配
+
+- 使用 `match` 必须覆盖所有可能的情况
+- 使用 `if let` 简化只有一个匹配分支的情况
+
+```rust
+match some_value {
+    1 => println!("one"),
+    3 => println!("three"),
+    _ => (),
+}
+```
+
+## 命名
+
+- 模块/函数/变量：`snake_case`
+- 结构体/枚举/trait：`PascalCase`
+- 常量：`SCREAMING_SNAKE_CASE`
+- 所有标识符使用英语
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加类型和验证**：补充类型系统，处理边界情况（Option、Result）
+3. **优化所有权和借用**：确保没有不必要的克隆，使用引用传递
+4. **编写测试**：单元测试和集成测试
+5. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持模块的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小

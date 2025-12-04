@@ -2,7 +2,7 @@
 description: Git 仓库管理（精简版）
 globs:
 - '**/*'
-alwaysApply: false
+alwaysApply: true
 tags:
 - general
 version: 1.0.0

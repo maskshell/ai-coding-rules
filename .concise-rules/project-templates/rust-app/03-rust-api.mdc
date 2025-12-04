@@ -1,0 +1,170 @@
+---
+description: Rust API 开发规范（精简版）
+globs:
+- '**/*.rs'
+alwaysApply: false
+tags:
+- rust
+- api
+- web
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Rust API 开发规范（精简版）
+
+## Web 框架
+
+- 推荐使用 Axum（基于 tokio 和 tower）
+- 备选 Actix-web（功能丰富）
+
+```rust
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::Json,
+    routing::get,
+    Router,
+};
+
+async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, StatusCode> {
+    // 模拟查找用户
+    if id == 0 {
+        return Err(StatusCode::NOT_FOUND);
+    }
+    Ok(Json(User { id, username: "test".to_string() }))
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .route("/users/:id", get(get_user));
+    // ...
+}
+```
+
+## 路由组织
+
+- 按功能模块组织路由
+- 使用 `Router::nest` 嵌套路由
+- 使用标准 HTTP 方法：GET、POST、PUT、DELETE
+
+```rust
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(list_users).post(create_user))
+        .route("/:id", get(get_user).put(update_user))
+}
+```
+
+## 请求和响应
+
+- 使用 `serde` 进行序列化和反序列化
+- 定义统一的响应格式
+- 使用适当的 HTTP 状态码
+
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct UserResponse {
+    pub id: u64,
+    pub username: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+}
+```
+
+## 错误处理
+
+- 使用统一的错误响应格式
+- 返回适当的 HTTP 状态码
+- 实现 `IntoResponse` trait 自动转换错误
+
+```rust
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub code: u16,
+    pub message: String,
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, error_response) = match self {
+            AppError::NotFound(msg) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse {
+                    code: 404,
+                    message: msg,
+                },
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse {
+                    code: 500,
+                    message: "Internal Server Error".to_string(),
+                },
+            ),
+        };
+        (status, Json(error_response)).into_response()
+    }
+}
+```
+
+## 数据库集成
+
+- 使用 SQLx（编译时检查 SQL）或 SeaORM（ORM）
+- 在 Axum 中使用 `State` 传递数据库连接池
+
+```rust
+use axum::extract::State;
+use sqlx::PgPool;
+
+async fn get_user_handler(
+    State(pool): State<PgPool>,
+    Path(id): Path<i64>,
+) -> Result<Json<User>, StatusCode> {
+    let user = sqlx::query_as::<_, User>(
+        "SELECT id, username FROM users WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(&pool)
+    .await
+    .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+    .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(user))
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **设计 API 接口**：定义端点、请求/响应格式、状态码
+2. **实现路由处理函数**：编写处理函数，先返回 mock 数据
+3. **实现数据模型**：定义请求和响应的结构体
+4. **实现业务逻辑**：编写 Service 层逻辑
+5. **集成数据库**：连接数据库，实现数据访问层
+6. **添加错误处理**：统一错误响应格式
+7. **添加中间件**：日志、CORS、认证等
+8. **编写测试**：单元测试和集成测试
+9. **代码审查和优化**：改善性能和代码质量
+
+### 功能开发原则
+
+- 优先实现 MVP，先让 API 能正常工作
+- 每个端点实现后立即用 HTTP 客户端测试
+- 保持处理函数的简洁，业务逻辑放在 Service 层
+- 通过重构逐步改善代码质量
+- 编写测试覆盖核心业务逻辑

@@ -2,7 +2,7 @@
 description: AI 助手行为偏好
 globs:
 - '**/*'
-alwaysApply: false
+alwaysApply: true
 tags:
 - typescript
 - react

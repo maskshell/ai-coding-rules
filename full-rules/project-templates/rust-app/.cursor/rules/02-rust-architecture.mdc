@@ -1,0 +1,459 @@
+---
+description: Rust 架构设计规范
+globs:
+- '**/*.rs'
+alwaysApply: false
+tags:
+- rust
+- architecture
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Rust 架构设计规范
+
+## 模块组织
+
+### 项目结构
+
+- 使用 `src/main.rs` 作为二进制程序入口
+- 使用 `src/lib.rs` 作为库入口
+- 按功能模块组织代码，每个模块一个文件或目录
+- 使用 `mod` 声明模块，使用 `pub` 控制可见性
+
+```rust
+// src/lib.rs
+pub mod config;
+pub mod models;
+pub mod services;
+pub mod handlers;
+
+// src/models/user.rs
+pub struct User {
+    pub id: u64,
+    pub username: String,
+}
+
+// src/services/user_service.rs
+use crate::models::User;
+
+pub struct UserService;
+
+impl UserService {
+    pub fn get_by_id(id: u64) -> Option<User> {
+        // 实现逻辑
+        None
+    }
+}
+```
+
+### 模块可见性
+
+- 默认所有项都是私有的
+- 使用 `pub` 使项公开
+- 使用 `pub(crate)` 限制在当前 crate 内可见
+- 使用 `pub(super)` 限制在父模块可见
+
+```rust
+mod outer {
+    pub(crate) fn public_in_crate() {}
+    
+    mod inner {
+        pub(super) fn public_in_parent() {}
+        
+        fn private() {}
+    }
+}
+```
+
+### 使用声明
+
+- 使用 `use` 导入需要的项
+- 优先使用绝对路径（从 crate 根开始）
+- 使用 `crate::` 引用当前 crate
+- 使用 `self::` 引用当前模块
+- 使用 `super::` 引用父模块
+
+```rust
+// 好的例子：使用绝对路径
+use crate::models::User;
+use crate::services::UserService;
+
+// 好的例子：使用相对路径（在同一模块内）
+use super::User;
+use self::helper_function;
+```
+
+## 错误处理
+
+### Result 类型
+
+- 使用 `Result<T, E>` 表示可能失败的操作
+- 定义自定义错误类型，实现 `std::error::Error` trait
+- 使用 `?` 操作符传播错误
+- 在顶层处理错误，提供用户友好的错误信息
+
+```rust
+use std::fmt;
+
+// 自定义错误类型
+#[derive(Debug)]
+pub enum AppError {
+    NotFound(String),
+    ValidationError(String),
+    DatabaseError(String),
+}
+
+impl fmt::Display for AppError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            AppError::NotFound(msg) => write!(f, "Not found: {}", msg),
+            AppError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            AppError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for AppError {}
+
+// 使用 Result
+fn get_user(id: u64) -> Result<User, AppError> {
+    if id == 0 {
+        return Err(AppError::ValidationError("Invalid user ID".to_string()));
+    }
+    // 模拟数据库查询
+    Ok(User { id, username: "test".to_string() })
+}
+
+// 使用 ? 操作符传播错误
+fn process_user(id: u64) -> Result<String, AppError> {
+    let user = get_user(id)?; // 如果失败，自动返回错误
+    Ok(format!("User: {}", user.username))
+}
+```
+
+### 错误处理库
+
+- 对于复杂项目，考虑使用 `thiserror` 或 `anyhow`
+- `thiserror`：用于定义错误类型
+- `anyhow`：用于应用程序错误处理
+
+```rust
+// 使用 thiserror
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum AppError {
+    #[error("Not found: {0}")]
+    NotFound(String),
+    
+    #[error("Validation error: {0}")]
+    ValidationError(String),
+    
+    #[error("Database error: {0}")]
+    #[from]
+    DatabaseError(#[from] sqlx::Error),
+}
+
+// 使用 anyhow
+use anyhow::{Context, Result};
+
+fn read_config() -> Result<Config> {
+    let content = std::fs::read_to_string("config.toml")
+        .context("Failed to read config file")?;
+    // ...
+    Ok(config)
+}
+```
+
+### 错误处理最佳实践
+
+- 在函数边界处处理错误，不要忽略
+- 使用 `match` 或 `if let` 处理 `Option` 和 `Result`
+- 避免使用 `unwrap()` 和 `expect()`（除非在测试或确定不会失败的地方）
+- 提供有意义的错误消息
+
+```rust
+// 好的例子：显式处理错误
+match get_user(id) {
+    Ok(user) => println!("User: {}", user.username),
+    Err(AppError::NotFound(msg)) => println!("User not found: {}", msg),
+    Err(e) => eprintln!("Error: {}", e),
+}
+
+// 不好的例子：使用 unwrap（可能 panic）
+let user = get_user(id).unwrap(); // 危险！
+
+// 好的例子：在确定不会失败时使用 expect
+let config = load_config().expect("Config should always be available");
+```
+
+## 并发编程
+
+### 线程
+
+- 使用 `std::thread::spawn` 创建新线程
+- 使用 `move` 闭包将所有权移动到线程
+- 使用通道（channel）在线程间传递数据
+
+```rust
+use std::thread;
+use std::sync::mpsc;
+
+// 创建线程
+let handle = thread::spawn(|| {
+    println!("Hello from a thread!");
+});
+
+handle.join().unwrap();
+
+// 使用 move 闭包
+let v = vec![1, 2, 3];
+let handle = thread::spawn(move || {
+    println!("Here's a vector: {:?}", v);
+});
+
+// 使用通道
+let (tx, rx) = mpsc::channel();
+
+thread::spawn(move || {
+    let val = String::from("hi");
+    tx.send(val).unwrap();
+});
+
+let received = rx.recv().unwrap();
+println!("Got: {}", received);
+```
+
+### 共享状态并发
+
+- 使用 `Mutex<T>` 保护共享数据
+- 使用 `Arc<T>` 实现多所有权（原子引用计数）
+- 结合使用 `Arc<Mutex<T>>` 实现线程间共享可变数据
+
+```rust
+use std::sync::{Arc, Mutex};
+use std::thread;
+
+let counter = Arc::new(Mutex::new(0));
+let mut handles = vec![];
+
+for _ in 0..10 {
+    let counter = Arc::clone(&counter);
+    let handle = thread::spawn(move || {
+        let mut num = counter.lock().unwrap();
+        *num += 1;
+    });
+    handles.push(handle);
+}
+
+for handle in handles {
+    handle.join().unwrap();
+}
+
+println!("Result: {}", *counter.lock().unwrap());
+```
+
+### 异步编程
+
+- 使用 `async/await` 语法
+- 使用 `tokio` 或 `async-std` 作为异步运行时
+- 使用 `Future` trait 表示异步计算
+- 使用 `tokio::spawn` 并发执行异步任务
+
+```rust
+use tokio;
+
+async fn fetch_user(id: u64) -> Result<User, AppError> {
+    // 异步操作
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    Ok(User { id, username: "test".to_string() })
+}
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let user = fetch_user(1).await?;
+    println!("User: {}", user.username);
+    Ok(())
+}
+
+// 并发执行
+let handles: Vec<_> = (1..=10)
+    .map(|id| {
+        tokio::spawn(async move {
+            fetch_user(id).await
+        })
+    })
+    .collect();
+
+for handle in handles {
+    if let Ok(Ok(user)) = handle.await {
+        println!("User: {}", user.username);
+    }
+}
+```
+
+## 设计模式
+
+### 使用 trait 实现多态
+
+- 使用 trait 定义共享行为
+- 使用 trait bounds 约束泛型参数
+- 使用 trait objects 实现动态分发
+
+```rust
+// 定义 trait
+pub trait Draw {
+    fn draw(&self);
+}
+
+// 实现 trait
+struct Circle {
+    radius: f64,
+}
+
+impl Draw for Circle {
+    fn draw(&self) {
+        println!("Drawing a circle with radius {}", self.radius);
+    }
+}
+
+// 使用 trait bounds
+fn draw_shape<T: Draw>(shape: &T) {
+    shape.draw();
+}
+
+// 使用 trait objects
+fn draw_shapes(shapes: &[Box<dyn Draw>]) {
+    for shape in shapes {
+        shape.draw();
+    }
+}
+```
+
+### Builder 模式
+
+- 使用 Builder 模式构建复杂对象
+- 链式调用设置属性
+- 最后调用 `build()` 方法创建对象
+
+```rust
+pub struct User {
+    username: String,
+    email: String,
+    age: Option<u32>,
+}
+
+pub struct UserBuilder {
+    username: Option<String>,
+    email: Option<String>,
+    age: Option<u32>,
+}
+
+impl UserBuilder {
+    pub fn new() -> Self {
+        UserBuilder {
+            username: None,
+            email: None,
+            age: None,
+        }
+    }
+
+    pub fn username(mut self, username: String) -> Self {
+        self.username = Some(username);
+        self
+    }
+
+    pub fn email(mut self, email: String) -> Self {
+        self.email = Some(email);
+        self
+    }
+
+    pub fn age(mut self, age: u32) -> Self {
+        self.age = Some(age);
+        self
+    }
+
+    pub fn build(self) -> Result<User, String> {
+        Ok(User {
+            username: self.username.ok_or("Username is required")?,
+            email: self.email.ok_or("Email is required")?,
+            age: self.age,
+        })
+    }
+}
+
+// 使用
+let user = UserBuilder::new()
+    .username("john".to_string())
+    .email("john@example.com".to_string())
+    .age(30)
+    .build()?;
+```
+
+### 策略模式
+
+- 使用 trait 定义策略接口
+- 实现不同的策略
+- 在运行时选择策略
+
+```rust
+pub trait PaymentStrategy {
+    fn pay(&self, amount: f64) -> Result<(), String>;
+}
+
+pub struct CreditCardPayment {
+    card_number: String,
+}
+
+impl PaymentStrategy for CreditCardPayment {
+    fn pay(&self, amount: f64) -> Result<(), String> {
+        println!("Paying {} with credit card {}", amount, self.card_number);
+        Ok(())
+    }
+}
+
+pub struct PayPalPayment {
+    email: String,
+}
+
+impl PaymentStrategy for PayPalPayment {
+    fn pay(&self, amount: f64) -> Result<(), String> {
+        println!("Paying {} with PayPal {}", amount, self.email);
+        Ok(())
+    }
+}
+
+pub struct PaymentProcessor {
+    strategy: Box<dyn PaymentStrategy>,
+}
+
+impl PaymentProcessor {
+    pub fn new(strategy: Box<dyn PaymentStrategy>) -> Self {
+        PaymentProcessor { strategy }
+    }
+
+    pub fn process_payment(&self, amount: f64) -> Result<(), String> {
+        self.strategy.pay(amount)
+    }
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加错误处理**：使用 `Result` 类型，定义错误类型
+3. **优化模块结构**：组织代码到合适的模块，控制可见性
+4. **添加并发支持**：如需要，添加异步或线程支持
+5. **编写测试**：单元测试和集成测试
+6. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持模块的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小

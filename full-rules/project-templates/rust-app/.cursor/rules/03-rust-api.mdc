@@ -1,0 +1,477 @@
+---
+description: Rust API 开发规范
+globs:
+- '**/*.rs'
+alwaysApply: false
+tags:
+- rust
+- api
+- web
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Rust API 开发规范
+
+## Web 框架选择
+
+### Axum（推荐）
+
+- 基于 `tokio` 和 `tower` 的现代异步 Web 框架
+- 类型安全的路由和中间件
+- 良好的性能和可扩展性
+- 与 `tokio` 生态系统集成良好
+
+```rust
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::Json,
+    routing::get,
+    Router,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    id: u64,
+    username: String,
+}
+
+async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, StatusCode> {
+    // 实现逻辑
+    Ok(Json(User {
+        id,
+        username: "test".to_string(),
+    }))
+}
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .route("/users/:id", get(get_user));
+
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    axum::serve(listener, app).await.unwrap();
+}
+```
+
+### Actix-web（备选）
+
+- 功能丰富的 Web 框架
+- 良好的性能和生态系统
+- 适合需要更多内置功能的项目
+
+```rust
+use actix_web::{web, App, HttpServer, Responder, Result};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+struct User {
+    id: u64,
+    username: String,
+}
+
+async fn get_user(path: web::Path<u64>) -> Result<impl Responder> {
+    let id = path.into_inner();
+    Ok(web::Json(User {
+        id,
+        username: "test".to_string(),
+    }))
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    HttpServer::new(|| {
+        App::new()
+            .route("/users/{id}", web::get().to(get_user))
+    })
+    .bind("127.0.0.1:8080")?
+    .run()
+    .await
+}
+```
+
+## 路由组织
+
+### 模块化路由
+
+- 按功能模块组织路由
+- 使用 `Router::nest` 嵌套路由
+- 在 `main.rs` 或 `lib.rs` 中组合所有路由
+
+```rust
+// src/handlers/users.rs
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::Json,
+    routing::{get, post},
+    Router,
+};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct User {
+    pub id: u64,
+    pub username: String,
+}
+
+pub async fn get_user(Path(id): Path<u64>) -> Result<Json<User>, StatusCode> {
+    Ok(Json(User {
+        id,
+        username: "test".to_string(),
+    }))
+}
+
+pub async fn create_user(Json(payload): Json<CreateUserRequest>) -> Result<Json<User>, StatusCode> {
+    Ok(Json(User {
+        id: 1,
+        username: payload.username,
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+}
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/:id", get(get_user))
+        .route("/", post(create_user))
+}
+
+// src/main.rs
+mod handlers;
+
+use handlers::users;
+
+#[tokio::main]
+async fn main() {
+    let app = Router::new()
+        .nest("/users", users::router());
+
+    // ...
+}
+```
+
+### RESTful API 设计
+
+- 使用标准 HTTP 方法：GET、POST、PUT、DELETE、PATCH
+- 使用复数名词作为资源名：`/users`、`/posts`
+- 使用嵌套资源表示关系：`/users/:id/posts`
+- 返回适当的 HTTP 状态码
+
+```rust
+// GET /users - 获取用户列表
+// GET /users/:id - 获取单个用户
+// POST /users - 创建用户
+// PUT /users/:id - 更新用户（完整替换）
+// PATCH /users/:id - 部分更新用户
+// DELETE /users/:id - 删除用户
+
+pub fn router() -> Router {
+    Router::new()
+        .route("/", get(list_users).post(create_user))
+        .route("/:id", get(get_user).put(update_user).delete(delete_user))
+        .route("/:id/posts", get(get_user_posts))
+}
+```
+
+## 请求和响应
+
+### 序列化
+
+- 使用 `serde` 进行序列化和反序列化
+- 为请求和响应结构体实现 `Serialize` 和 `Deserialize`
+- 使用 `#[serde(rename_all = "snake_case")]` 等属性控制序列化格式
+
+```rust
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct UserResponse {
+    pub id: u64,
+    pub username: String,
+    pub email: String,
+    pub created_at: String,
+}
+
+#[derive(Deserialize)]
+pub struct CreateUserRequest {
+    pub username: String,
+    pub email: String,
+}
+
+#[derive(Deserialize)]
+pub struct UpdateUserRequest {
+    pub username: Option<String>,
+    pub email: Option<String>,
+}
+```
+
+### 标准响应格式
+
+- 定义统一的响应格式
+- 包含状态码、消息和数据字段
+- 提供分页响应模型
+
+```rust
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct ApiResponse<T> {
+    pub code: u16,
+    pub message: String,
+    pub data: Option<T>,
+}
+
+impl<T> ApiResponse<T> {
+    pub fn success(data: T) -> Self {
+        ApiResponse {
+            code: 200,
+            message: "Success".to_string(),
+            data: Some(data),
+        }
+    }
+
+    pub fn error(code: u16, message: String) -> ApiResponse<()> {
+        ApiResponse {
+            code,
+            message,
+            data: None,
+        }
+    }
+}
+
+#[derive(Serialize)]
+pub struct PaginatedResponse<T> {
+    pub total: u64,
+    pub page: u64,
+    pub page_size: u64,
+    pub items: Vec<T>,
+}
+```
+
+### 错误响应
+
+- 使用统一的错误响应格式
+- 返回适当的 HTTP 状态码
+- 提供详细的错误信息
+
+```rust
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use serde::Serialize;
+
+#[derive(Serialize)]
+pub struct ErrorResponse {
+    pub code: u16,
+    pub message: String,
+    pub detail: Option<String>,
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, error_response) = match self {
+            AppError::NotFound(msg) => (
+                StatusCode::NOT_FOUND,
+                ErrorResponse {
+                    code: 404,
+                    message: "Not Found".to_string(),
+                    detail: Some(msg),
+                },
+            ),
+            AppError::ValidationError(msg) => (
+                StatusCode::BAD_REQUEST,
+                ErrorResponse {
+                    code: 400,
+                    message: "Validation Error".to_string(),
+                    detail: Some(msg),
+                },
+            ),
+            _ => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                ErrorResponse {
+                    code: 500,
+                    message: "Internal Server Error".to_string(),
+                    detail: None,
+                },
+            ),
+        };
+
+        (status, Json(error_response)).into_response()
+    }
+}
+```
+
+## 中间件
+
+### 常用中间件
+
+- 日志记录：使用 `tower-http::trace::TraceLayer`
+- CORS：使用 `tower-http::cors::CorsLayer`
+- 认证：自定义中间件或使用 `tower` 中间件
+- 限流：使用 `tower-http::limit::RequestBodyLimitLayer`
+
+```rust
+use axum::Router;
+use tower_http::{
+    cors::CorsLayer,
+    trace::TraceLayer,
+};
+use tracing_subscriber;
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt::init();
+
+    let app = Router::new()
+        .layer(TraceLayer::new_for_http())
+        .layer(CorsLayer::permissive());
+
+    // ...
+}
+```
+
+### 自定义中间件
+
+- 使用 `tower::Service` 创建自定义中间件
+- 或使用 `axum::middleware::from_fn` 创建简单的中间件
+
+```rust
+use axum::{
+    extract::Request,
+    middleware::Next,
+    response::Response,
+};
+
+async fn auth_middleware(
+    request: Request,
+    next: Next,
+) -> Result<Response, StatusCode> {
+    // 检查认证
+    let auth_header = request.headers().get("authorization");
+    
+    if auth_header.is_none() {
+        return Err(StatusCode::UNAUTHORIZED);
+    }
+
+    Ok(next.run(request).await)
+}
+
+// 使用
+let app = Router::new()
+    .route("/protected", get(protected_handler))
+    .layer(axum::middleware::from_fn(auth_middleware));
+```
+
+## 数据库集成
+
+### SQLx（推荐）
+
+- 异步 SQL 工具包
+- 编译时检查 SQL 查询
+- 支持 PostgreSQL、MySQL、SQLite
+
+```rust
+use sqlx::{PgPool, postgres::PgPoolOptions};
+
+#[derive(sqlx::FromRow, Serialize)]
+struct User {
+    id: i64,
+    username: String,
+    email: String,
+}
+
+async fn get_user(pool: &PgPool, id: i64) -> Result<Option<User>, sqlx::Error> {
+    let user = sqlx::query_as::<_, User>(
+        "SELECT id, username, email FROM users WHERE id = $1"
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(user)
+}
+
+// 在 Axum 中使用
+use axum::extract::State;
+
+async fn get_user_handler(
+    State(pool): State<PgPool>,
+    Path(id): Path<i64>,
+) -> Result<Json<User>, StatusCode> {
+    let user = get_user(&pool, id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    Ok(Json(user))
+}
+
+#[tokio::main]
+async fn main() {
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&std::env::var("DATABASE_URL").expect("DATABASE_URL must be set"))
+        .await
+        .unwrap();
+
+    let app = Router::new()
+        .route("/users/:id", get(get_user_handler))
+        .with_state(pool);
+
+    // ...
+}
+```
+
+### SeaORM（ORM 选择）
+
+- 类型安全的 ORM
+- 支持异步操作
+- 提供迁移工具
+
+```rust
+use sea_orm::{Database, EntityTrait, DbErr};
+
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Serialize)]
+#[sea_orm(table_name = "users")]
+pub struct Model {
+    #[sea_orm(primary_key)]
+    pub id: i64,
+    pub username: String,
+    pub email: String,
+}
+
+pub async fn get_user(db: &DatabaseConnection, id: i64) -> Result<Option<Model>, DbErr> {
+    Entity::find_by_id(id).one(db).await
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **设计 API 接口**：定义端点、请求/响应格式、状态码
+2. **实现路由处理函数**：编写处理函数，先返回 mock 数据
+3. **实现数据模型**：定义请求和响应的结构体
+4. **实现业务逻辑**：编写 Service 层逻辑
+5. **集成数据库**：连接数据库，实现数据访问层
+6. **添加错误处理**：统一错误响应格式
+7. **添加中间件**：日志、CORS、认证等
+8. **编写测试**：单元测试和集成测试
+9. **代码审查和优化**：改善性能和代码质量
+
+### 功能开发原则
+
+- 优先实现 MVP，先让 API 能正常工作
+- 每个端点实现后立即用 HTTP 客户端测试
+- 保持处理函数的简洁，业务逻辑放在 Service 层
+- 通过重构逐步改善代码质量
+- 编写测试覆盖核心业务逻辑

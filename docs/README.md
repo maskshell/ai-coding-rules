@@ -49,6 +49,18 @@
 
 **适用对象**：规则编写者、技术研究者
 
+#### [IDE层规则 alwaysApply 设置分析](./ide-layer-alwaysapply-analysis.md)
+
+**用途**：分析 IDE 层规则的 `alwaysApply` 设置是否合理，确保规则正确应用。
+
+**主要内容**：
+
+- IDE 层规则 `alwaysApply` 设置检查
+- 问题分析和修复建议
+- 验证标准和最佳实践
+
+**适用对象**：规则维护者、项目维护者
+
 ---
 
 ### 3. AI 工具相关
@@ -155,6 +167,7 @@
 - [规则编写指南](./rule-writing-guide.md)
 - [MDC Frontmatter 规范](./mdc-frontmatter-spec.md)
 - [MDC 条件模式分析](./mdc-conditional-mode-analysis.md)
+- [IDE层规则 alwaysApply 设置分析](./ide-layer-alwaysapply-analysis.md)
 
 #### 想了解 AI 工具使用
 
@@ -183,13 +196,15 @@
 | [技术栈选型建议](./tech-stack-recommendation.md) | 325 | 8.0KB | 建议 |
 | [MDC 条件模式分析](./mdc-conditional-mode-analysis.md) | 290 | 7.3KB | 分析 |
 | [MDC Frontmatter 规范](./mdc-frontmatter-spec.md) | 292 | 6.1KB | 规范 |
+| [IDE层规则 alwaysApply 设置分析](./ide-layer-alwaysapply-analysis.md) | 88 | 2.2KB | 分析 |
 
-**总计**：8 个文档，约 3,449 行，约 88.9KB
+**总计**：9 个文档，约 3,538 行，约 91.1KB
 
 ---
 
 ## 🔄 文档更新记录
 
+- **2025-12-02**：添加 IDE层规则 alwaysApply 设置分析文档
 - **2025-12-02**：添加 Scripts 使用场景说明文档
 - **2025-11-30**：创建文档索引
 - 各文档的更新记录请查看对应文档的 frontmatter 或文档头部

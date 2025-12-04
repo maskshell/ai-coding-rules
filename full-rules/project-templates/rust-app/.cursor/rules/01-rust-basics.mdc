@@ -1,0 +1,342 @@
+---
+description: Rust 编码基础
+globs:
+- '**/*.rs'
+alwaysApply: false
+tags:
+- rust
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Rust 编码基础
+
+## 所有权和借用
+
+### 所有权规则
+
+- 每个值只有一个所有者
+- 值离开作用域时自动释放
+- 移动语义：所有权转移，原变量不可用
+- 复制语义：实现 `Copy` trait 的类型（如 `i32`、`bool`）自动复制
+
+```rust
+// 移动语义
+let s1 = String::from("hello");
+let s2 = s1; // s1 的所有权移动到 s2
+// println!("{}", s1); // 编译错误：s1 已不再有效
+
+// 复制语义
+let x = 5;
+let y = x; // x 被复制，两者都有效
+println!("{} {}", x, y); // 正常
+```
+
+### 借用规则
+
+- 不可变借用：可以有多个，但不能同时有可变借用
+- 可变借用：只能有一个，且不能同时有不可变借用
+- 借用不能超过值的生命周期
+
+```rust
+// 不可变借用
+let s = String::from("hello");
+let r1 = &s;
+let r2 = &s; // 可以有多个不可变借用
+println!("{} {}", r1, r2);
+
+// 可变借用
+let mut s = String::from("hello");
+let r1 = &mut s;
+// let r2 = &mut s; // 编译错误：不能有两个可变借用
+```
+
+### 函数参数和返回值
+
+- 优先使用引用而非移动所有权
+- 返回引用时注意生命周期
+- 使用 `&str` 而非 `&String` 作为参数（更灵活）
+
+```rust
+// 好的例子：使用引用
+fn calculate_length(s: &str) -> usize {
+    s.len()
+}
+
+// 不好的例子：移动所有权
+fn take_ownership(s: String) -> usize {
+    s.len()
+}
+
+// 返回引用需要生命周期标注
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+```
+
+## 生命周期
+
+### 生命周期标注
+
+- 当函数返回引用时，需要显式标注生命周期
+- 生命周期参数以 `'` 开头，通常使用 `'a`、`'b` 等
+- 生命周期确保引用在使用期间有效
+
+```rust
+// 需要生命周期标注
+struct ImportantExcerpt<'a> {
+    part: &'a str,
+}
+
+impl<'a> ImportantExcerpt<'a> {
+    fn level(&self) -> i32 {
+        3
+    }
+
+    fn announce_and_return_part(&self, announcement: &str) -> &str {
+        println!("Attention please: {}", announcement);
+        self.part
+    }
+}
+```
+
+### 生命周期省略规则
+
+- 编译器可以自动推断大多数生命周期
+- 每个引用参数都有自己的生命周期
+- 如果只有一个输入生命周期参数，它被赋予所有输出生命周期参数
+- 如果方法有 `&self` 或 `&mut self`，`self` 的生命周期被赋予所有输出生命周期参数
+
+```rust
+// 编译器可以推断生命周期
+fn first_word(s: &str) -> &str {
+    let bytes = s.as_bytes();
+    for (i, &item) in bytes.iter().enumerate() {
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+    &s[..]
+}
+```
+
+## 类型系统
+
+### 基本类型
+
+- 标量类型：整数（`i32`、`u64` 等）、浮点数（`f32`、`f64`）、布尔（`bool`）、字符（`char`）
+- 复合类型：元组（tuple）、数组（array）
+- 优先使用 `i32` 作为默认整数类型（除非有特殊需求）
+
+```rust
+// 标量类型
+let x: i32 = 42;
+let y: f64 = 3.14;
+let is_active: bool = true;
+let c: char = '中';
+
+// 元组
+let tup: (i32, f64, u8) = (500, 6.4, 1);
+let (x, y, z) = tup; // 解构
+
+// 数组
+let arr: [i32; 5] = [1, 2, 3, 4, 5];
+let arr2 = [0; 5]; // [0, 0, 0, 0, 0]
+```
+
+### 结构体和枚举
+
+- 使用结构体组织相关数据
+- 使用枚举表示可能的值集合
+- 枚举可以携带数据
+
+```rust
+// 结构体
+struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+}
+
+// 枚举
+enum IpAddr {
+    V4(String),
+    V6(String),
+}
+
+// 带数据的枚举
+enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+}
+```
+
+### Option 和 Result
+
+- 使用 `Option<T>` 表示可能为空的值
+- 使用 `Result<T, E>` 表示可能失败的操作
+- 优先使用 `match` 或 `if let` 处理，避免 `unwrap()`（除非确定不会失败）
+
+```rust
+// Option
+fn find_user(id: u32) -> Option<User> {
+    // 可能返回 None
+    Some(User { /* ... */ })
+}
+
+match find_user(1) {
+    Some(user) => println!("Found user: {}", user.username),
+    None => println!("User not found"),
+}
+
+// Result
+fn divide(a: f64, b: f64) -> Result<f64, String> {
+    if b == 0.0 {
+        Err("Division by zero".to_string())
+    } else {
+        Ok(a / b)
+    }
+}
+
+match divide(10.0, 2.0) {
+    Ok(result) => println!("Result: {}", result),
+    Err(e) => println!("Error: {}", e),
+}
+```
+
+## 模式匹配
+
+### match 表达式
+
+- 必须覆盖所有可能的情况
+- 使用 `_` 作为通配符
+- 可以绑定值到变量
+
+```rust
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
+
+// 绑定值
+match some_u8_value {
+    1 => println!("one"),
+    3 => println!("three"),
+    5 => println!("five"),
+    7 => println!("seven"),
+    _ => (), // 忽略其他值
+}
+```
+
+### if let 和 while let
+
+- `if let` 用于简化只有一个匹配分支的情况
+- `while let` 用于循环直到模式不匹配
+
+```rust
+// if let
+let some_option_value = Some(3);
+if let Some(3) = some_option_value {
+    println!("three");
+}
+
+// while let
+let mut stack = Vec::new();
+stack.push(1);
+stack.push(2);
+stack.push(3);
+
+while let Some(top) = stack.pop() {
+    println!("{}", top);
+}
+```
+
+## 命名规范
+
+### 基本命名规则
+
+- 模块名：`snake_case`（如 `user_service`）
+- 函数名：`snake_case`（如 `get_user_by_id`）
+- 变量名：`snake_case`（如 `user_name`）
+- 常量名：`SCREAMING_SNAKE_CASE`（如 `MAX_RETRIES`）
+- 结构体名：`PascalCase`（如 `UserProfile`）
+- 枚举名：`PascalCase`（如 `HttpStatus`）
+- 枚举变体：`PascalCase`（如 `HttpStatus::Ok`）
+- trait 名：`PascalCase`（如 `Display`）
+- 类型别名：`PascalCase`（如 `UserId`）
+
+### 命名语言选择
+
+- **所有标识符使用英语**：模块名、函数名、变量名、结构体名等
+- **避免拼音命名**：使用语义化的英文单词
+- **技术术语保持英文**：如 Ownership、Borrowing、Lifetime 等
+- **文档注释使用英语**：符合 Rust 社区规范
+- **注释根据团队习惯选择**：可以使用中文或英文，建议保持一致
+
+```rust
+// Good: 英文命名，清晰的文档注释
+/// Represents a user in the system.
+struct User {
+    /// Unique identifier for the user.
+    id: u64,
+    /// User's display name.
+    username: String,
+}
+
+impl User {
+    /// Retrieves a user by their ID.
+    ///
+    /// # Arguments
+    ///
+    /// * `id` - The unique identifier of the user
+    ///
+    /// # Returns
+    ///
+    /// Returns `Some(User)` if found, `None` otherwise.
+    fn get_by_id(id: u64) -> Option<Self> {
+        // 查询数据库获取用户信息
+        None
+    }
+}
+
+// Bad: 拼音命名
+struct YongHu {
+    yong_hu_id: u64, // 不符合 Rust 社区规范
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加类型和验证**：补充类型系统，处理边界情况（Option、Result）
+3. **优化所有权和借用**：确保没有不必要的克隆，使用引用传递
+4. **编写测试**：单元测试和集成测试
+5. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持模块的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小

@@ -2,7 +2,7 @@
 description: AI 助手行为偏好（精简版）
 globs:
 - '**/*'
-alwaysApply: false
+alwaysApply: true
 tags:
 - general
 version: 1.0.0
