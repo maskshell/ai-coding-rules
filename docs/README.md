@@ -21,6 +21,20 @@
 
 **适用对象**：规则编写者、项目维护者
 
+#### [规则配置指南](./rule-configuration-guide.md) ⭐ 核心文档
+
+**用途**：说明如何配置 Cursor Rules，包括 Always Applied vs Agent Requestable、规则依赖关系、Frontmatter 格式规范和验证方法。
+
+**主要内容**：
+
+- Always Applied vs Agent Requestable 的区别和选择
+- 规则依赖关系的管理
+- Frontmatter 格式规范
+- 验证配置方法
+- 最佳实践
+
+**适用对象**：规则编写者、项目维护者、规则使用者
+
 ---
 
 ### 2. MDC 格式规范
