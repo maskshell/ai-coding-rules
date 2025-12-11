@@ -28,7 +28,7 @@ author: ai-coding-rules-team
 - 敏感数据（密码、个人信息）必须加密存储
 - 日志中不输出敏感信息
 - 传输层使用 HTTPS/TLS
-- 定期检查依赖漏洞（npm audit, pip check）
+- 定期检查依赖漏洞（使用项目配置的依赖检查工具）
 
 ## 访问控制
 

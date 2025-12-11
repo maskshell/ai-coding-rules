@@ -53,6 +53,6 @@ author: ai-coding-rules-team
 
 ## 本地工具优先
 
-- 代码检查和格式化优先使用本地工具（Ruff、Prettier、ESLint）
+- 代码检查和格式化优先使用项目配置的本地工具
 - 避免在对话中生成完整格式化代码（减少token消耗）
 - 使用工具命令而非代码示例
