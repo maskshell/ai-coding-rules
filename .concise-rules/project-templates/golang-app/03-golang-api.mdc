@@ -1,0 +1,124 @@
+---
+description: Golang API 开发规范（精简版）
+globs:
+  - '**/*.go'
+alwaysApply: false
+tags:
+  - golang
+  - api
+  - web
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Golang API 开发规范（精简版）
+
+## Web 框架
+
+- Gin（推荐）：高性能 HTTP Web 框架，简洁的 API 设计
+- Echo（备选）：高性能、极简的 Web 框架
+
+```go
+// Gin
+r := gin.Default()
+r.GET("/users/:id", getUser)
+r.Run(":8080")
+```
+
+## 路由组织
+
+- 按功能模块组织路由
+- 使用路由组（Route Group）组织相关路由
+- RESTful 设计：GET、POST、PUT、DELETE、PATCH
+
+```go
+func (h *UserHandler) RegisterRoutes(r *gin.RouterGroup) {
+    users := r.Group("/users")
+    {
+        users.GET("/:id", h.GetUser)
+        users.POST("/", h.CreateUser)
+    }
+}
+```
+
+## 请求和响应
+
+- 使用框架提供的绑定功能验证请求
+- 定义统一的响应格式
+- 返回适当的 HTTP 状态码
+
+```go
+type CreateUserRequest struct {
+    Username string `json:"username" binding:"required"`
+    Email    string `json:"email" binding:"required,email"`
+}
+
+type Response struct {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    interface{} `json:"data,omitempty"`
+}
+```
+
+## 中间件
+
+- 日志记录、CORS、认证、限流
+- 使用 `c.Next()` 继续处理
+- 使用 `c.Abort()` 终止处理
+
+```go
+func authMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        token := c.GetHeader("Authorization")
+        if token == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+            c.Abort()
+            return
+        }
+        c.Next()
+    }
+}
+```
+
+## 数据库集成
+
+- GORM（推荐）：功能丰富的 ORM
+- SQLx（备选）：轻量级 SQL 工具包
+
+```go
+// GORM
+type User struct {
+    ID       int64  `gorm:"primaryKey"`
+    Username string `gorm:"uniqueIndex"`
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id int64) (*User, error) {
+    var user User
+    if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+        return nil, err
+    }
+    return &user, nil
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **设计 API 接口**：定义端点、请求/响应格式、状态码
+2. **实现路由处理函数**：编写处理函数，先返回 mock 数据
+3. **实现数据模型**：定义请求和响应的结构体
+4. **实现业务逻辑**：编写 Service 层逻辑
+5. **集成数据库**：连接数据库，实现数据访问层
+6. **添加错误处理**：统一错误响应格式
+7. **添加中间件**：日志、CORS、认证等
+8. **编写测试**：单元测试和集成测试
+9. **代码审查和优化**：改善性能和代码质量
+
+### 功能开发原则
+
+- 优先实现 MVP，先让 API 能正常工作
+- 每个端点实现后立即用 HTTP 客户端测试
+- 保持处理函数的简洁，业务逻辑放在 Service 层
+- 通过重构逐步改善代码质量
+- 编写测试覆盖核心业务逻辑

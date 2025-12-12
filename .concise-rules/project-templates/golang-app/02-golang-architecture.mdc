@@ -1,0 +1,150 @@
+---
+description: Golang 架构设计规范（精简版）
+globs:
+  - '**/*.go'
+alwaysApply: false
+tags:
+  - golang
+  - architecture
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Golang 架构设计规范（精简版）
+
+## 包组织
+
+- 包应该提供单一、清晰的功能
+- 包名应该简短、小写、有意义
+- 避免循环依赖
+- 使用 `internal` 包限制可见性
+
+```go
+// Good
+package user
+
+type User struct {
+    ID   int64
+    Name string
+}
+
+// Bad
+package common  // 太泛化
+```
+
+## 错误处理
+
+- 定义错误变量用于错误比较
+- 创建自定义错误类型提供更多上下文
+- 使用 `errors.Is()` 检查特定错误
+- 使用 `errors.As()` 提取错误类型
+
+```go
+var ErrUserNotFound = errors.New("user not found")
+
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e *ValidationError) Error() string {
+    return fmt.Sprintf("validation error on %s: %s", e.Field, e.Message)
+}
+
+if errors.Is(err, ErrUserNotFound) {
+    // 处理用户不存在
+}
+```
+
+## 接口设计
+
+- 接口应该小而专注
+- 优先接受接口，返回结构体
+- 接口名通常以 `-er` 结尾，或使用描述性名称
+- 避免过度设计，只在需要时定义接口
+
+```go
+type UserRepository interface {
+    GetByID(ctx context.Context, id int64) (*User, error)
+    Create(ctx context.Context, user *User) error
+}
+```
+
+## 并发编程
+
+- 使用 `go` 关键字启动 goroutine
+- 注意 goroutine 的生命周期管理
+- 使用 channel 在 goroutine 间通信
+- 使用 `sync.Mutex` 保护共享资源
+- 使用 `context.Context` 传递取消信号
+
+```go
+// Goroutine
+go func() {
+    processTask()
+}()
+
+// Channel
+ch := make(chan int)
+go func() {
+    ch <- 1
+}()
+v := <-ch
+
+// Mutex
+type SafeCounter struct {
+    mu    sync.Mutex
+    value int
+}
+
+// Context
+func GetUser(ctx context.Context, id int64) (*User, error) {
+    select {
+    case <-ctx.Done():
+        return nil, ctx.Err()
+    default:
+    }
+    // ...
+}
+```
+
+## 设计模式
+
+- 依赖注入：通过构造函数注入依赖，使用接口
+- Repository 模式：封装数据访问逻辑
+- Service 层：封装业务逻辑，协调 Repository
+
+```go
+// 依赖注入
+type UserService struct {
+    repo UserRepository
+}
+
+func NewUserService(repo UserRepository) *UserService {
+    return &UserService{repo: repo}
+}
+
+// Repository
+type UserRepository interface {
+    GetByID(ctx context.Context, id int64) (*User, error)
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加错误处理**：使用 `error` 类型，定义错误变量和类型
+3. **优化架构设计**：使用接口、依赖注入等模式
+4. **添加并发支持**：如需要，添加 goroutine 和 channel
+5. **编写测试**：单元测试和集成测试
+6. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持包的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小

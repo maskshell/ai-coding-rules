@@ -1,0 +1,583 @@
+---
+description: Golang API 开发规范
+globs:
+  - '**/*.go'
+alwaysApply: false
+tags:
+  - golang
+  - api
+  - web
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Golang API 开发规范
+
+## Web 框架选择
+
+### Gin（推荐）
+
+- 高性能的 HTTP Web 框架
+- 简洁的 API 设计
+- 丰富的中间件生态
+- 良好的文档和社区支持
+
+```go
+package main
+
+import (
+    "net/http"
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+    r := gin.Default()
+    
+    r.GET("/users/:id", getUser)
+    r.POST("/users", createUser)
+    
+    r.Run(":8080")
+}
+
+func getUser(c *gin.Context) {
+    id := c.Param("id")
+    // 实现逻辑
+    c.JSON(http.StatusOK, gin.H{"id": id})
+}
+
+func createUser(c *gin.Context) {
+    var req CreateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    // 实现逻辑
+    c.JSON(http.StatusCreated, gin.H{"message": "user created"})
+}
+```
+
+### Echo（备选）
+
+- 高性能、极简的 Web 框架
+- 内置中间件
+- 支持 WebSocket
+- 良好的性能表现
+
+```go
+package main
+
+import (
+    "net/http"
+    "github.com/labstack/echo/v4"
+)
+
+func main() {
+    e := echo.New()
+    
+    e.GET("/users/:id", getUser)
+    e.POST("/users", createUser)
+    
+    e.Start(":8080")
+}
+
+func getUser(c echo.Context) error {
+    id := c.Param("id")
+    return c.JSON(http.StatusOK, map[string]string{"id": id})
+}
+
+func createUser(c echo.Context) error {
+    var req CreateUserRequest
+    if err := c.Bind(&req); err != nil {
+        return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
+    }
+    // 实现逻辑
+    return c.JSON(http.StatusCreated, map[string]string{"message": "user created"})
+}
+```
+
+## 路由组织
+
+### 模块化路由
+
+- 按功能模块组织路由
+- 使用路由组（Route Group）组织相关路由
+- 在 `main.go` 中组合所有路由
+
+```go
+// internal/handler/user.go
+package handler
+
+import (
+    "net/http"
+    "github.com/gin-gonic/gin"
+)
+
+type UserHandler struct {
+    service UserService
+}
+
+func NewUserHandler(service UserService) *UserHandler {
+    return &UserHandler{service: service}
+}
+
+func (h *UserHandler) GetUser(c *gin.Context) {
+    id := c.Param("id")
+    user, err := h.service.GetUserByID(c.Request.Context(), id)
+    if err != nil {
+        c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, user)
+}
+
+func (h *UserHandler) CreateUser(c *gin.Context) {
+    var req CreateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    
+    user, err := h.service.CreateUser(c.Request.Context(), req)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    
+    c.JSON(http.StatusCreated, user)
+}
+
+// 注册路由
+func (h *UserHandler) RegisterRoutes(r *gin.RouterGroup) {
+    users := r.Group("/users")
+    {
+        users.GET("/:id", h.GetUser)
+        users.POST("/", h.CreateUser)
+        users.PUT("/:id", h.UpdateUser)
+        users.DELETE("/:id", h.DeleteUser)
+    }
+}
+
+// main.go
+func main() {
+    r := gin.Default()
+    
+    // 注册路由
+    v1 := r.Group("/api/v1")
+    {
+        userHandler.RegisterRoutes(v1)
+        // 其他路由组
+    }
+    
+    r.Run(":8080")
+}
+```
+
+### RESTful API 设计
+
+- 使用标准 HTTP 方法：GET、POST、PUT、DELETE、PATCH
+- 使用复数名词作为资源名：`/users`、`/posts`
+- 使用嵌套资源表示关系：`/users/:id/posts`
+- 返回适当的 HTTP 状态码
+
+```go
+// RESTful 路由设计
+// GET    /api/v1/users          - 获取用户列表
+// GET    /api/v1/users/:id      - 获取单个用户
+// POST   /api/v1/users           - 创建用户
+// PUT    /api/v1/users/:id      - 更新用户（完整替换）
+// PATCH  /api/v1/users/:id      - 部分更新用户
+// DELETE /api/v1/users/:id      - 删除用户
+
+func (h *UserHandler) RegisterRoutes(r *gin.RouterGroup) {
+    users := r.Group("/users")
+    {
+        users.GET("", h.ListUsers)           // GET /api/v1/users
+        users.GET("/:id", h.GetUser)         // GET /api/v1/users/:id
+        users.POST("", h.CreateUser)         // POST /api/v1/users
+        users.PUT("/:id", h.UpdateUser)      // PUT /api/v1/users/:id
+        users.PATCH("/:id", h.PatchUser)     // PATCH /api/v1/users/:id
+        users.DELETE("/:id", h.DeleteUser)   // DELETE /api/v1/users/:id
+        
+        // 嵌套资源
+        users.GET("/:id/posts", h.GetUserPosts)  // GET /api/v1/users/:id/posts
+    }
+}
+```
+
+## 请求和响应
+
+### 请求绑定
+
+- 使用框架提供的绑定功能验证请求
+- 定义请求结构体，使用标签进行验证
+- 处理绑定错误
+
+```go
+import (
+    "github.com/go-playground/validator/v10"
+)
+
+// 请求结构体
+type CreateUserRequest struct {
+    Username string `json:"username" binding:"required,min=3,max=20"`
+    Email    string `json:"email" binding:"required,email"`
+    Password string `json:"password" binding:"required,min=8"`
+}
+
+type UpdateUserRequest struct {
+    Username *string `json:"username" binding:"omitempty,min=3,max=20"`
+    Email    *string `json:"email" binding:"omitempty,email"`
+}
+
+// 使用绑定
+func (h *UserHandler) CreateUser(c *gin.Context) {
+    var req CreateUserRequest
+    if err := c.ShouldBindJSON(&req); err != nil {
+        // 处理验证错误
+        c.JSON(http.StatusBadRequest, gin.H{
+            "error": "validation failed",
+            "details": err.Error(),
+        })
+        return
+    }
+    // 处理请求
+}
+```
+
+### 标准响应格式
+
+- 定义统一的响应格式
+- 包含状态码、消息和数据字段
+- 提供分页响应模型
+
+```go
+// 标准响应结构
+type Response struct {
+    Code    int         `json:"code"`
+    Message string      `json:"message"`
+    Data    interface{} `json:"data,omitempty"`
+}
+
+func SuccessResponse(data interface{}) *Response {
+    return &Response{
+        Code:    200,
+        Message: "success",
+        Data:    data,
+    }
+}
+
+func ErrorResponse(code int, message string) *Response {
+    return &Response{
+        Code:    code,
+        Message: message,
+    }
+}
+
+// 分页响应
+type PaginatedResponse struct {
+    Total    int64       `json:"total"`
+    Page     int         `json:"page"`
+    PageSize int         `json:"page_size"`
+    Items    interface{} `json:"items"`
+}
+
+func (h *UserHandler) ListUsers(c *gin.Context) {
+    page := c.DefaultQuery("page", "1")
+    pageSize := c.DefaultQuery("page_size", "10")
+    
+    users, total, err := h.service.ListUsers(c.Request.Context(), page, pageSize)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, ErrorResponse(500, err.Error()))
+        return
+    }
+    
+    c.JSON(http.StatusOK, SuccessResponse(PaginatedResponse{
+        Total:    total,
+        Page:     parsePage(page),
+        PageSize: parsePageSize(pageSize),
+        Items:    users,
+    }))
+}
+```
+
+### 错误响应
+
+- 使用统一的错误响应格式
+- 返回适当的 HTTP 状态码
+- 提供详细的错误信息
+
+```go
+// 错误响应
+type ErrorResponse struct {
+    Code    int    `json:"code"`
+    Message string `json:"message"`
+    Detail  string `json:"detail,omitempty"`
+}
+
+func (h *UserHandler) handleError(c *gin.Context, err error) {
+    var statusCode int
+    var errorResp ErrorResponse
+    
+    switch {
+    case errors.Is(err, ErrUserNotFound):
+        statusCode = http.StatusNotFound
+        errorResp = ErrorResponse{
+            Code:    404,
+            Message: "User not found",
+            Detail:  err.Error(),
+        }
+    case errors.As(err, &ValidationError{}):
+        statusCode = http.StatusBadRequest
+        errorResp = ErrorResponse{
+            Code:    400,
+            Message: "Validation error",
+            Detail:  err.Error(),
+        }
+    default:
+        statusCode = http.StatusInternalServerError
+        errorResp = ErrorResponse{
+            Code:    500,
+            Message: "Internal server error",
+        }
+    }
+    
+    c.JSON(statusCode, errorResp)
+}
+```
+
+## 中间件
+
+### 常用中间件
+
+- 日志记录：记录请求和响应
+- CORS：处理跨域请求
+- 认证：验证用户身份
+- 限流：防止请求过载
+- 恢复：捕获 panic 并恢复
+
+```go
+import (
+    "time"
+    "github.com/gin-gonic/gin"
+    "github.com/gin-contrib/cors"
+    "github.com/gin-contrib/logger"
+)
+
+func setupMiddleware(r *gin.Engine) {
+    // CORS
+    r.Use(cors.New(cors.Config{
+        AllowOrigins:     []string{"http://localhost:3000"},
+        AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
+        AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+        ExposeHeaders:    []string{"Content-Length"},
+        AllowCredentials: true,
+        MaxAge:           12 * time.Hour,
+    }))
+    
+    // 日志
+    r.Use(gin.Logger())
+    
+    // 恢复
+    r.Use(gin.Recovery())
+    
+    // 认证（自定义）
+    r.Use(authMiddleware())
+}
+
+// 自定义认证中间件
+func authMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        token := c.GetHeader("Authorization")
+        if token == "" {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+            c.Abort()
+            return
+        }
+        
+        // 验证 token
+        userID, err := validateToken(token)
+        if err != nil {
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid token"})
+            c.Abort()
+            return
+        }
+        
+        // 将用户 ID 存储到 context
+        c.Set("user_id", userID)
+        c.Next()
+    }
+}
+```
+
+### 自定义中间件
+
+- 使用 `gin.HandlerFunc` 定义中间件
+- 使用 `c.Next()` 继续处理
+- 使用 `c.Abort()` 终止处理
+
+```go
+// 请求 ID 中间件
+func requestIDMiddleware() gin.HandlerFunc {
+    return func(c *gin.Context) {
+        requestID := c.GetHeader("X-Request-ID")
+        if requestID == "" {
+            requestID = generateRequestID()
+        }
+        c.Set("request_id", requestID)
+        c.Header("X-Request-ID", requestID)
+        c.Next()
+    }
+}
+
+// 限流中间件
+func rateLimitMiddleware() gin.HandlerFunc {
+    // 使用令牌桶算法
+    limiter := rate.NewLimiter(rate.Limit(100), 100)
+    
+    return func(c *gin.Context) {
+        if !limiter.Allow() {
+            c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limit exceeded"})
+            c.Abort()
+            return
+        }
+        c.Next()
+    }
+}
+```
+
+## 数据库集成
+
+### GORM（推荐）
+
+- 功能丰富的 ORM
+- 支持多种数据库
+- 提供迁移、关联、钩子等功能
+
+```go
+import (
+    "gorm.io/gorm"
+    "gorm.io/driver/postgres"
+)
+
+// 模型定义
+type User struct {
+    ID        int64     `gorm:"primaryKey" json:"id"`
+    Username  string    `gorm:"uniqueIndex;not null" json:"username"`
+    Email     string    `gorm:"uniqueIndex;not null" json:"email"`
+    CreatedAt time.Time `json:"created_at"`
+    UpdatedAt time.Time `json:"updated_at"`
+}
+
+// 数据库连接
+func NewDB(dsn string) (*gorm.DB, error) {
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil {
+        return nil, err
+    }
+    
+    // 自动迁移
+    if err := db.AutoMigrate(&User{}); err != nil {
+        return nil, err
+    }
+    
+    return db, nil
+}
+
+// Repository 实现
+type userRepository struct {
+    db *gorm.DB
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id int64) (*User, error) {
+    var user User
+    if err := r.db.WithContext(ctx).First(&user, id).Error; err != nil {
+        if errors.Is(err, gorm.ErrRecordNotFound) {
+            return nil, ErrUserNotFound
+        }
+        return nil, err
+    }
+    return &user, nil
+}
+
+func (r *userRepository) Create(ctx context.Context, user *User) error {
+    return r.db.WithContext(ctx).Create(user).Error
+}
+```
+
+### SQLx（备选）
+
+- 轻量级 SQL 工具包
+- 更接近原生 SQL
+- 更好的性能控制
+
+```go
+import (
+    "github.com/jmoiron/sqlx"
+    _ "github.com/lib/pq"
+)
+
+// 数据库连接
+func NewDB(dsn string) (*sqlx.DB, error) {
+    db, err := sqlx.Connect("postgres", dsn)
+    if err != nil {
+        return nil, err
+    }
+    
+    db.SetMaxOpenConns(25)
+    db.SetMaxIdleConns(5)
+    db.SetConnMaxLifetime(5 * time.Minute)
+    
+    return db, nil
+}
+
+// Repository 实现
+type userRepository struct {
+    db *sqlx.DB
+}
+
+func (r *userRepository) GetByID(ctx context.Context, id int64) (*User, error) {
+    var user User
+    query := "SELECT id, username, email, created_at, updated_at FROM users WHERE id = $1"
+    
+    if err := r.db.GetContext(ctx, &user, query, id); err != nil {
+        if errors.Is(err, sql.ErrNoRows) {
+            return nil, ErrUserNotFound
+        }
+        return nil, err
+    }
+    
+    return &user, nil
+}
+
+func (r *userRepository) Create(ctx context.Context, user *User) error {
+    query := `
+        INSERT INTO users (username, email, created_at, updated_at)
+        VALUES ($1, $2, $3, $4)
+        RETURNING id
+    `
+    return r.db.QueryRowContext(ctx, query, user.Username, user.Email, time.Now(), time.Now()).
+        Scan(&user.ID)
+}
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **设计 API 接口**：定义端点、请求/响应格式、状态码
+2. **实现路由处理函数**：编写处理函数，先返回 mock 数据
+3. **实现数据模型**：定义请求和响应的结构体
+4. **实现业务逻辑**：编写 Service 层逻辑
+5. **集成数据库**：连接数据库，实现数据访问层
+6. **添加错误处理**：统一错误响应格式
+7. **添加中间件**：日志、CORS、认证等
+8. **编写测试**：单元测试和集成测试
+9. **代码审查和优化**：改善性能和代码质量
+
+### 功能开发原则
+
+- 优先实现 MVP，先让 API 能正常工作
+- 每个端点实现后立即用 HTTP 客户端测试
+- 保持处理函数的简洁，业务逻辑放在 Service 层
+- 通过重构逐步改善代码质量
+- 编写测试覆盖核心业务逻辑

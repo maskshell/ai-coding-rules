@@ -1,0 +1,154 @@
+---
+description: Golang 编码基础（精简版）
+globs:
+  - '**/*.go'
+alwaysApply: false
+tags:
+  - golang
+  - go
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Golang 编码基础（精简版）
+
+## 项目结构
+
+- 使用 Go 标准项目布局
+- `cmd/` 存放应用程序入口
+- `internal/` 存放私有应用代码
+- `pkg/` 存放可被外部使用的库代码
+- 每个目录是一个包，包名与目录名一致
+
+```text
+project/
+├── cmd/app/main.go
+├── internal/
+│   ├── handler/
+│   ├── service/
+│   └── repository/
+├── pkg/utils/
+└── go.mod
+```
+
+## 命名
+
+- 包名：小写字母，简短（如 `user`、`auth`）
+- 函数/变量：驼峰命名，公开首字母大写，私有首字母小写
+- 常量：全大写，单词间用下划线（如 `MAX_RETRIES`）
+- 类型/接口：PascalCase（如 `UserService`）
+- 所有标识符使用英语
+
+```go
+// Good
+type User struct {
+    ID   int64
+    Name string
+}
+
+func GetUserByID(id int64) (*User, error) {
+    // ...
+}
+
+// Bad
+type YongHu struct {
+    YongHuID int64  // 拼音命名
+}
+```
+
+## 类型系统
+
+- 使用结构体组织相关数据
+- 使用接口定义行为，小而专注
+- 优先接受接口，返回结构体
+- 使用 `error` 接口表示错误
+
+```go
+type User struct {
+    ID   int64  `json:"id"`
+    Name string `json:"name"`
+}
+
+type UserRepository interface {
+    GetByID(ctx context.Context, id int64) (*User, error)
+}
+
+var ErrUserNotFound = errors.New("user not found")
+```
+
+## 错误处理
+
+- 错误是值，使用 `error` 接口类型
+- 使用 `errors.New()` 或 `fmt.Errorf()` 创建错误
+- 使用 `errors.Is()` 和 `errors.As()` 检查错误
+- 错误应该被处理，不要忽略
+
+```go
+var ErrUserNotFound = errors.New("user not found")
+
+func GetUser(id int64) (*User, error) {
+    if id <= 0 {
+        return nil, fmt.Errorf("invalid id: %d", id)
+    }
+    // ...
+    return nil, ErrUserNotFound
+}
+
+if err != nil {
+    if errors.Is(err, ErrUserNotFound) {
+        // 处理用户不存在
+    }
+}
+```
+
+## 函数和方法
+
+- 函数应该简短、专注
+- 参数数量不宜过多（超过 3 个考虑使用结构体）
+- 返回值通常包括结果和错误
+- 值接收者：不修改接收者
+- 指针接收者：需要修改接收者或结构体较大时使用
+
+```go
+func GetUserByID(ctx context.Context, id int64) (*User, error) {
+    // ...
+}
+
+func (u *User) UpdateName(name string) {
+    u.Name = name
+}
+```
+
+## 代码格式化
+
+- 必须使用 `go fmt` 进行格式化
+- 提交前运行 `go fmt ./...` 检查格式
+- 使用 `goimports` 自动管理导入
+
+```bash
+# 格式化所有代码（必须）
+go fmt ./...
+
+# 使用 goimports（推荐）
+goimports -w .
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加错误处理**：使用 `error` 类型，定义错误变量和类型
+3. **优化类型设计**：设计清晰的接口和结构体
+4. **代码格式化**：运行 `go fmt` 确保代码格式正确
+5. **编写测试**：单元测试和集成测试
+6. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持包的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小
+- **代码变更后必须运行 `go fmt ./...`**，确保格式正确

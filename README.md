@@ -149,6 +149,7 @@ ln -s /path/to/ai-coding-rules/.concise-rules/ide-layer/* ~/.cursor/rules/
 - [React Application](./full-rules/project-templates/react-app/docs/coding-standards.md)
 - [Vue Application](./full-rules/project-templates/vue-app/docs/coding-standards.md)
 - [Python Backend](./full-rules/project-templates/python-backend/docs/coding-standards.md)
+- [Golang Backend](./full-rules/project-templates/golang-app/docs/coding-standards.md)
 - [Shell Scripts](./full-rules/project-templates/shell-scripts/docs/coding-standards.md)
 - [Full-Stack Project](./full-rules/project-templates/fullstack-monorepo/docs/coding-standards.md)
 - [Rule Writing Guide (including Agile and Design Patterns)](./docs/rule-writing-guide.md)

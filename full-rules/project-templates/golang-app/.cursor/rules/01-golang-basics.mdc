@@ -1,0 +1,390 @@
+---
+description: Golang 编码基础
+globs:
+  - '**/*.go'
+alwaysApply: false
+tags:
+  - golang
+  - go
+version: 1.0.0
+author: ai-coding-rules-team
+---
+
+# Golang 编码基础
+
+## 项目结构
+
+### 标准项目布局
+
+- 使用 Go 标准项目布局（Standard Go Project Layout）
+- `cmd/` 目录存放应用程序入口
+- `internal/` 目录存放私有应用代码
+- `pkg/` 目录存放可被外部应用使用的库代码
+- `api/` 目录存放 API 定义文件（如 OpenAPI/Swagger）
+- `configs/` 目录存放配置文件
+- `docs/` 目录存放文档
+
+```text
+project/
+├── cmd/
+│   └── app/
+│       └── main.go          # 应用程序入口
+├── internal/
+│   ├── config/              # 配置管理
+│   ├── handler/             # HTTP 处理器
+│   ├── service/             # 业务逻辑
+│   ├── repository/          # 数据访问
+│   └── model/               # 数据模型
+├── pkg/                     # 可被外部使用的库
+│   └── utils/
+├── api/                     # API 定义
+├── configs/                 # 配置文件
+├── docs/                    # 文档
+├── go.mod                   # Go 模块定义
+├── go.sum                   # 依赖校验和
+└── README.md
+```
+
+### 包组织
+
+- 每个目录是一个包，包名与目录名一致
+- 使用小写字母，简短且有意义
+- 避免使用 `common`、`util` 等泛化名称
+- 包名应该是单数形式（如 `user` 而非 `users`）
+
+```go
+// Good: 清晰的包组织
+package user
+
+type User struct {
+    ID   int64
+    Name string
+}
+
+// Bad: 泛化的包名
+package common  // 太泛化，不清楚用途
+```
+
+## 命名规范
+
+### 基本命名规则
+
+- 包名：小写字母，简短（如 `user`、`auth`）
+- 函数名：驼峰命名，公开函数首字母大写（如 `GetUser`），私有函数首字母小写（如 `getUser`）
+- 变量名：驼峰命名，公开变量首字母大写，私有变量首字母小写
+- 常量：全大写，单词间用下划线分隔（如 `MAX_RETRIES`）
+- 类型名：PascalCase（如 `UserService`、`HTTPClient`）
+- 接口名：通常以 `-er` 结尾（如 `Reader`、`Writer`），或使用描述性名称
+
+### 命名语言选择
+
+- **所有标识符使用英语**：包名、函数名、变量名、类型名、接口名等
+- **避免拼音命名**：使用语义化的英文单词
+- **技术术语保持英文**：如 Context、Goroutine、Channel、Interface 等
+- **注释和文档使用英语**：符合 Go 社区规范
+- **代码注释根据团队习惯选择**：可以使用中文或英文，建议保持一致
+
+```go
+// Good: 英文命名，清晰的文档注释
+// User represents a user in the system.
+type User struct {
+    // ID is the unique identifier for the user.
+    ID   int64
+    // Name is the user's display name.
+    Name string
+}
+
+// GetUserByID retrieves a user by their ID.
+//
+// Parameters:
+//   - ctx: context.Context for request cancellation
+//   - id: the unique identifier of the user
+//
+// Returns:
+//   - *User: the user if found
+//   - error: error if user not found or other error occurs
+func GetUserByID(ctx context.Context, id int64) (*User, error) {
+    // 查询数据库获取用户信息
+    return nil, nil
+}
+
+// Bad: 拼音命名
+type YongHu struct {
+    YongHuID int64  // 不符合 Go 社区规范
+}
+```
+
+## 类型系统
+
+### 基本类型
+
+- 整数：`int`、`int8`、`int16`、`int32`、`int64`、`uint`、`uint8`、`uint16`、`uint32`、`uint64`
+- 浮点数：`float32`、`float64`
+- 布尔：`bool`
+- 字符串：`string`
+- 字节：`byte`（`uint8` 的别名）
+- 优先使用 `int` 作为默认整数类型（除非有特殊需求）
+
+```go
+var (
+    age     int     = 30
+    price   float64 = 99.99
+    active  bool    = true
+    name    string  = "John"
+    data    []byte  = []byte("hello")
+)
+```
+
+### 结构体
+
+- 使用结构体组织相关数据
+- 字段名使用 PascalCase（公开字段）或 camelCase（私有字段）
+- 使用标签（tags）控制序列化和验证
+
+```go
+// User represents a user entity
+type User struct {
+    ID        int64     `json:"id" db:"id"`
+    Username  string    `json:"username" db:"username"`
+    Email     string    `json:"email" db:"email"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+
+// 私有字段（小写开头）
+type userConfig struct {
+    maxRetries int
+    timeout    time.Duration
+}
+```
+
+### 接口
+
+- 接口应该小而专注（接口隔离原则）
+- 接口名通常以 `-er` 结尾，或使用描述性名称
+- 优先接受接口，返回结构体
+
+```go
+// Good: 小而专注的接口
+type Reader interface {
+    Read(p []byte) (n int, err error)
+}
+
+type Writer interface {
+    Write(p []byte) (n int, err error)
+}
+
+// 组合接口
+type ReadWriter interface {
+    Reader
+    Writer
+}
+
+// Good: 描述性接口名
+type UserRepository interface {
+    GetByID(ctx context.Context, id int64) (*User, error)
+    Create(ctx context.Context, user *User) error
+}
+```
+
+### 错误处理
+
+- 错误是值，使用 `error` 接口类型
+- 错误信息应该清晰、可操作
+- 使用 `errors.New()` 或 `fmt.Errorf()` 创建错误
+- 使用 `errors.Is()` 和 `errors.As()` 检查错误
+- 自定义错误类型实现 `error` 接口
+
+```go
+import (
+    "errors"
+    "fmt"
+)
+
+// 简单错误
+var ErrUserNotFound = errors.New("user not found")
+
+// 自定义错误类型
+type ValidationError struct {
+    Field   string
+    Message string
+}
+
+func (e *ValidationError) Error() string {
+    return fmt.Sprintf("validation error on field %s: %s", e.Field, e.Message)
+}
+
+// 使用错误
+func GetUser(id int64) (*User, error) {
+    if id <= 0 {
+        return nil, &ValidationError{
+            Field:   "id",
+            Message: "id must be positive",
+        }
+    }
+    // ...
+    return nil, ErrUserNotFound
+}
+
+// 检查错误
+if err != nil {
+    if errors.Is(err, ErrUserNotFound) {
+        // 处理用户不存在的情况
+    }
+    var validationErr *ValidationError
+    if errors.As(err, &validationErr) {
+        // 处理验证错误
+    }
+}
+```
+
+### 零值
+
+- Go 中每个类型都有零值
+- 结构体的零值是所有字段的零值
+- 利用零值简化代码
+
+```go
+var (
+    i int       // 0
+    s string    // ""
+    b bool      // false
+    p *User     // nil
+    sl []int    // nil
+    m map[string]int  // nil
+)
+
+// 利用零值
+if user == nil {
+    // 处理 nil 情况
+}
+```
+
+## 函数和方法
+
+### 函数设计
+
+- 函数应该简短、专注
+- 参数数量不宜过多（超过 3 个考虑使用结构体）
+- 返回值通常包括结果和错误
+- 使用命名返回值提高可读性（谨慎使用）
+
+```go
+// Good: 简洁的函数
+func GetUserByID(ctx context.Context, id int64) (*User, error) {
+    // 实现
+}
+
+// Good: 多个参数使用结构体
+type CreateUserRequest struct {
+    Username string
+    Email    string
+    Password string
+}
+
+func CreateUser(ctx context.Context, req CreateUserRequest) (*User, error) {
+    // 实现
+}
+
+// Good: 命名返回值（用于复杂场景）
+func ParseConfig(filename string) (config *Config, err error) {
+    // 如果出错，可以直接 return，err 会被自动返回
+    return
+}
+```
+
+### 方法接收者
+
+- 值接收者：不修改接收者，适用于小结构体
+- 指针接收者：需要修改接收者或结构体较大时使用
+- 保持一致性：同一类型的所有方法使用相同的接收者类型
+
+```go
+type User struct {
+    ID   int64
+    Name string
+}
+
+// 值接收者：不修改 User
+func (u User) String() string {
+    return fmt.Sprintf("User{ID: %d, Name: %s}", u.ID, u.Name)
+}
+
+// 指针接收者：修改 User
+func (u *User) UpdateName(name string) {
+    u.Name = name
+}
+
+// 一致性：所有方法都使用指针接收者
+type UserService struct {
+    repo UserRepository
+}
+
+func (s *UserService) GetUser(id int64) (*User, error) {
+    // ...
+}
+
+func (s *UserService) CreateUser(user *User) error {
+    // ...
+}
+```
+
+## 代码格式化
+
+### 格式化要求
+
+- **必须使用 `go fmt`**: 所有 Go 代码必须使用 `go fmt` 进行格式化
+- **提交前检查**: 提交代码前必须运行 `go fmt ./...` 确保格式正确
+- **使用 goimports**: 推荐使用 `goimports` 自动管理导入
+
+```bash
+# 格式化所有代码（必须）
+go fmt ./...
+
+# 使用 goimports（推荐）
+goimports -w .
+
+# 检查格式
+go fmt ./... && go vet ./...
+```
+
+### 导入组织
+
+- 标准库、第三方库、本地包分组，组间空行分隔
+- 使用 `goimports` 自动管理导入顺序
+
+```go
+import (
+    // 标准库
+    "context"
+    "fmt"
+    "time"
+
+    // 第三方库
+    "github.com/gin-gonic/gin"
+    "gorm.io/gorm"
+
+    // 本地包
+    "project/internal/model"
+    "project/internal/service"
+)
+```
+
+## 开发流程
+
+### 开发步骤
+
+1. **先实现基本功能**：让代码能正常工作，完成核心需求
+2. **添加错误处理**：使用 `error` 类型，定义错误变量和类型
+3. **优化类型设计**：设计清晰的接口和结构体
+4. **代码格式化**：运行 `go fmt` 确保代码格式正确
+5. **编写测试**：单元测试和集成测试
+6. **代码审查和重构**：改善代码结构和可读性
+
+### 功能开发原则
+
+- 优先实现 MVP，验证核心流程后再完善细节
+- 每个功能完成后手动测试验证
+- 保持包的独立性和可测试性
+- 通过重构逐步改善代码质量
+- 及时提交代码并保持提交粒度小
+- **代码变更后必须运行 `go fmt ./...`**，确保格式正确
